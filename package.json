@@ -1,0 +1,31 @@
+{
+  "name": "ansi-chunks",
+  "version": "0.0.1",
+  "description": "Having trouble manipulating strings with ANSI styles (eg: chalk) or certain Unicode characters? Make an AST out of it!",
+  "main": "index.js",
+  "scripts": {
+    "test": "ava"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com/rozzzly/ansi-chunks.git"
+  },
+  "keywords": [
+    "ansi",
+    "unicode",
+    "chalk",
+    "console",
+    "terminal",
+    "cli",
+    "string",
+    "multi-byte",
+    "emoji",
+    "ast",
+    "format"
+  ],
+  "author": "rozzzly",
+  "license": "MIT",
+  "dependencies": {
+    "ava": "^0.24.0"
+  }
+}

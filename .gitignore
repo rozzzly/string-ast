@@ -1,0 +1,11 @@
+# node modules
+node_modules
+
+# OSX files
+.DS_Store
+
+# dist
+dist
+
+# debug
+npm-debug.log
