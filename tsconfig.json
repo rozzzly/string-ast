@@ -1,5 +1,26 @@
 {
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es2015",
+        "moduleResolution": "node",
+        "lib": [
+            "esnext"
+        ],
+        "outDir": "./bin",
+        "sourceMap": true,
+        "declaration": true,
+        "noImplicitAny": true,
+        "suppressExcessPropertyErrors": false,
+        "noFallthroughCasesInSwitch": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "pretty": true,
+        "removeComments": false,
+        "charset": "utf-8"
+    },
+
     "exclude": [
+        "./bin",
         "./dist",
         "./node_modules"
     ],

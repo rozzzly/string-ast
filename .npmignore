@@ -4,5 +4,8 @@
 # dist
 dist
 
+# bin
+bin
+
 # debug
 npm-debug.log

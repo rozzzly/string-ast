@@ -6,6 +6,7 @@ node_modules
 
 # dist
 dist
+bin
 
 # debug
 npm-debug.log
