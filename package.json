@@ -1,15 +1,12 @@
 {
-  "name": "ansi-chunks",
+  "name": "string-ast",
   "version": "0.0.1",
-  "description": "Having trouble manipulating strings with ANSI styles (eg: chalk) or certain Unicode characters? Make an AST out of it!",
+  "description": "Having trouble manipulating strings with ANSI styles (eg: chalk) or certain Unicode characters? Hammer that nail with an anvil—make an AST out of it!",
   "main": "index.js",
   "scripts": {
     "test": "ava"
   },
-  "repository": {
-    "type": "git",
-    "url": "git@github.com/rozzzly/ansi-chunks.git"
-  },
+  "repository": "rozzzly/string-ast",
   "keywords": [
     "ansi",
     "unicode",
@@ -27,5 +24,8 @@
   "license": "MIT",
   "dependencies": {
     "ava": "^0.24.0"
+  },
+  "devDependencies": {
+    "typescript": "^2.6.2"
   }
 }
