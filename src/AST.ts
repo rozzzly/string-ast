@@ -1,7 +1,16 @@
+import { relative } from "path";
+
 export interface Location {
     offset: number;
     line: number;
     column: number;
+}
+
+export interface CompoundLocation extends Location {
+    offset: number; // global
+    line: number; // global
+    column: number; // global
+    relative: Location // relative to parent
 }
 
 export interface Range {
@@ -9,14 +18,10 @@ export interface Range {
     stop: Location;
 }
 
-export interface Node<T extends string = NodeTypes> {
-    type: T;
-    loc: Range;
-    parent: Node;
-    raw: string;
+export interface CompoundRange extends Range {
+    start: CompoundLocation;
+    stop: CompoundLocation;
 }
-
-
 
 export type Nodes = (
     | RootNode
@@ -26,6 +31,8 @@ export type Nodes = (
     | NewLineNode
     | AnsiEscapeNode
 );
+
+
 
 export type NodeTypes = (
     | 'RootNode'
@@ -37,29 +44,20 @@ export type NodeTypes = (
     | 'AnsiEscapeNode'
 );
 
-export type NodeTypeLookup = {
-    
-    TextNode: (
-        | 'PlainTextNode'
-        | 'AnsiTextNode'
-    );
-    CharacterNode: (
-        | 'CharacterNode'
-        | 'NewLineNode'
-        | 'AnsiEscapeNode'
-    );
-    // NewLineNode: NodeLineNode;
-};
+export interface HasRaw {
+    raw: string;
+}
 
-
-export class BaseNode<T extends NodeTypes> implements Node<T> {
+export class Node<T extends NodeTypes> {
     public type: T;
-    public loc: Range;
-    public relativeLoc: Range;
-    public parent: Node;
-    public raw: string;
-    public constructor(parent: Node) {
+    public range: Range;
+    public parent: Node<NodeTypes>;
+    public derivedFrom?: this;
+    public constructor(parent: Node<NodeTypes>) {
         this.parent = parent;
+    }
+    protected updateParentRange(): void {
+
     }
 }
 
@@ -73,25 +71,43 @@ export type TextNodeTypes = (
     | 'AnsiTextNode'
 );
 
-export class RootNode extends BaseNode<'RootNode'> {
+export class RootNode extends Node<'RootNode'> implements HasRaw {
+    public raw: string;
     public children: TextNode[];
-    public derivedFrom?: RootNode;
+    public range: Range;
+
     public constructor() {
         super(undefined);
+        this.range = undefined;
     }
+
     public splitMultiLine(): this {
-        if (this.derivedFrom) {
-            throw new ReferenceError();
-        } else {
-            return undefined;
-        }
+        throw new Error("Method not implemented.");
+    }
+
+    public calculateRange(): void {
+        let line: number = 0;
+        let column: number = 0;
+        let offset: number = 0;
+        this.range = {
+            start: { line, column, offset },
+            stop: undefined
+        };
+        this.children.forEach(child => {
+            child.calculateRange({ line, column, offset });
+            line = child.range.stop.line;
+            column = child.range.stop.column;
+            offset = child.range.stop.offset;
+        });
+        this.range.stop = { line, column, offset };
     }
 }
 
-export abstract class BaseTextNode<T extends TextNodeTypes> extends BaseNode<T> {
+export abstract class BaseTextNode<T extends TextNodeTypes> extends Node<T> implements HasRaw {
+    public raw: string;
     public parent: RootNode;
     public children: VisibleCharacterNode[];
-    public derivedFrom?: this;
+    public range: Range;
     public constructor(parent: RootNode, children: VisibleCharacterNode[]) {
         super(parent);
         this.children = children;
@@ -110,6 +126,56 @@ export abstract class BaseTextNode<T extends TextNodeTypes> extends BaseNode<T> 
         return result;
     }
     public abstract splitMultiLine(): this[];
+
+    public calculateRange(parentOffset: Location) {
+        this.range = {
+            start: {
+                ...parentOffset
+            },
+            stop: undefined
+        };
+        let line: number = 0;
+        let column: number = 0;
+        let offset: number = 0;
+        this.children.forEach(child => {
+            child.range = {
+                start: {
+                    line: parentOffset.line + line,
+                    column: parentOffset.column + column,
+                    offset: parentOffset.offset + offset,
+                    relative: {
+                        line, column, offset
+                    }
+                },
+                stop: undefined
+            };
+            column += child.width;
+            offset += child.bytes;
+            if (child.type === 'NewLineNode') {
+                line++;
+                column = 0;
+            }
+            child.range.stop = {
+                line: parentOffset.line + line,
+                column: parentOffset.column + column,
+                offset: parentOffset.offset + offset,
+                relative: {
+                    line, column, offset
+                }
+            };
+        });
+        if (this.children.length === 0) {
+            this.range.stop = {
+                ...this.range.start
+            };
+        } else {
+            this.range.stop = {
+                offset: this.range.start.offset + offset,
+                column: this.range.start.column + column,
+                line: this.range.start.line + line
+            };
+        }
+    }
 }
 
 export class PlainTextNode extends BaseTextNode<'PlainTextNode'> { 
@@ -120,11 +186,11 @@ export class PlainTextNode extends BaseTextNode<'PlainTextNode'> {
 }
 
 export class AnsiTextNode extends BaseTextNode<'AnsiTextNode'> {
+    public open: AnsiEscapeNode;
+    public close: AnsiEscapeNode;
     public splitMultiLine(): this[] {
         throw new Error("Method not implemented.");
     }
-    public open: AnsiEscapeNode;
-    public close: AnsiEscapeNode;
 }
 
 export type CharacterNodeTypes = (
@@ -142,9 +208,11 @@ export type VisibleCharacterNodeTypes = (
     | 'CharacterNode'
     | 'NewLineNode'
 );
-export class CharacterNode<T extends CharacterNodeTypes = 'CharacterNode'> extends BaseNode<T> {
+export class CharacterNode<T extends CharacterNodeTypes = 'CharacterNode'> extends Node<T> {
     public value: string;
-
+    public width: number;
+    public bytes: number;
+    public range: CompoundRange;
     public constructor(parent: TextNode, value: string) {
         super(parent);
         this.value = value;
@@ -152,8 +220,17 @@ export class CharacterNode<T extends CharacterNodeTypes = 'CharacterNode'> exten
 }
 
 export class NewLineNode extends CharacterNode<'NewLineNode'> {
-
+    public width: 0;
+    public constructor(parent: TextNode, value: string) {
+        super(parent, value);
+        this.width = 0;
+    }
 }
 export class AnsiEscapeNode extends CharacterNode<'AnsiEscapeNode'> {
-
+    public params: number[];
+    public width: 0;
+    public constructor(parent: TextNode, value: string) {
+        super(parent, value);
+        this.width = 0;
+    }
 }
