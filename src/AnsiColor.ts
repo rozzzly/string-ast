@@ -1,4 +1,5 @@
 import { inRange } from "./misc";
+import { FG_CUSTOM, BG_CUSTOM, COLOR_MODE_8BIT, COLOR_MODE_24BIT } from "./AnsiCodes";
 
 export interface RGB {
     r: number;
@@ -28,39 +29,6 @@ export type AnsiColor = (
 export abstract class AnsiColorBase {
     public abstract mode: AnsiColorMode;
     public abstract value: RGB | number;
-
-    /**
-     * **[Warning]**: this function will mutate the parameter `params`
-     *
-     * @param param color code
-     * @param params current stack escape params **[warning will be mutated]**
-     * @param paramsSafe original stack of escape params
-     */
-    public static parseColorCode(param: number, params: number[], paramsSafe: number[]): AnsiColor {
-        if (param === 38 || param === 48) { // (16bit OR 8bit)
-            const codeType = params.pop();
-            if (codeType === 5) { // 8bit
-                if (params.length >= 1) {
-                    return new AnsiColor_8Bit(params.pop());
-                } else {
-                    throw new Error('Malformed ANSI color'); //MalformedAnsiColorCodeError(paramsSafe);
-                }
-            } else if (codeType === 2) { // 24bit
-                if (params.length >= 3) {
-                    let r = params.pop();
-                    let g = params.pop();
-                    let b = params.pop();
-                    return new AnsiColor_24Bit({ r, g, b });
-                } else {
-                    throw new Error('Malformed ANSI color'); //MalformedAnsiColorCodeError(paramsSafe);
-                }
-            } else {
-                throw new Error('Malformed ANSI color'); //MalformedAnsiColorCodeError(paramsSafe);
-            }
-        } else { // 3bit
-            return new AnsiColor_3Bit(param);
-        }
-    }
 
     public abstract clone(): AnsiColor;
 
@@ -138,6 +106,41 @@ export class AnsiColor_24Bit extends AnsiColorBase {
         return new AnsiColor_24Bit(this.value);
     }
 }
+
+
+/**
+ * **[Warning]**: this function will mutate the parameter `params`
+ *
+ * @param param color code
+ * @param params current stack escape params **[warning will be mutated]**
+ * @param paramsSafe original stack of escape params
+ */
+export function parseColorCode(param: number, params: number[], paramsSafe: number[]): AnsiColor {
+    if (param === FG_CUSTOM || param === BG_CUSTOM) { // (16bit OR 8bit)
+        const codeType = params.pop();
+        if (codeType === COLOR_MODE_8BIT) { // 8bit
+            if (params.length >= 1) {
+                return new AnsiColor_8Bit(params.pop());
+            } else {
+                throw new Error('Malformed ANSI color'); //MalformedAnsiColorCodeError(paramsSafe);
+            }
+        } else if (codeType === COLOR_MODE_24BIT) { // 24bit
+            if (params.length >= 3) {
+                let r = params.pop();
+                let g = params.pop();
+                let b = params.pop();
+                return new AnsiColor_24Bit({ r, g, b });
+            } else {
+                throw new Error('Malformed ANSI color'); //MalformedAnsiColorCodeError(paramsSafe);
+            }
+        } else {
+            throw new Error('Malformed ANSI color'); //MalformedAnsiColorCodeError(paramsSafe);
+        }
+    } else { // 3bit
+        return new AnsiColor_3Bit(param);
+    }
+}
+
 
 export interface AnsiColorPalette {
     BLACK: AnsiColor,
