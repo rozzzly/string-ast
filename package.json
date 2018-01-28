@@ -23,7 +23,9 @@
   "author": "rozzzly",
   "license": "MIT",
   "dependencies": {
-    "ava": "^0.24.0"
+    "@types/lodash": "^4.14.97",
+    "ava": "^0.24.0",
+    "lodash": "^4.17.4"
   },
   "devDependencies": {
     "@types/node": "^9.3.0",

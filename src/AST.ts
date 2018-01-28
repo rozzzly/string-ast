@@ -1,4 +1,4 @@
-import { relative } from "path";
+import { AnsiStyle } from "./AnsiStyle";
 
 export interface Location {
     offset: number;
@@ -36,7 +36,6 @@ export type Nodes = (
 
 export type NodeTypes = (
     | 'RootNode'
-    // | 'TextNode'
     | 'PlainTextNode'
     | 'AnsiTextNode'
     | 'CharacterNode'
@@ -48,16 +47,16 @@ export interface HasRaw {
     raw: string;
 }
 
+export interface Derived {
+    derivedFrom?: this;
+}
+
 export class Node<T extends NodeTypes> {
     public type: T;
     public range: Range;
     public parent: Node<NodeTypes>;
-    public derivedFrom?: this;
     public constructor(parent: Node<NodeTypes>) {
         this.parent = parent;
-    }
-    protected updateParentRange(): void {
-
     }
 }
 
@@ -186,8 +185,13 @@ export class PlainTextNode extends BaseTextNode<'PlainTextNode'> {
 }
 
 export class AnsiTextNode extends BaseTextNode<'AnsiTextNode'> {
-    public open: AnsiEscapeNode;
-    public close: AnsiEscapeNode;
+    public style: AnsiStyle;
+
+    public constructor(parent: RootNode, children: VisibleCharacterNode[], style: AnsiStyle) {
+        super(parent, children);
+        this.style = style;
+    }
+
     public splitMultiLine(): this[] {
         throw new Error("Method not implemented.");
     }

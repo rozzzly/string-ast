@@ -3,7 +3,7 @@
 Ever tried to manipulate a string containing weird Unicode characters (emojis, CJK, etc)
 or the ANSI escape sequences used to make console output colorized? It can be a real pain.
 This package is my attempt to make that easier. By building a comprehensive AST, it becomes
-possible to preform declarative opertions on Unicode strings as if they were just ASCII.
+possible to preform declarative operations on ANSI/Unicode strings as if they were just ASCII.
 
 -------------------------
 
