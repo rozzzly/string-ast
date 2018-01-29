@@ -106,13 +106,13 @@ export class RootNode extends Node<'RootNode'> implements HasRaw {
 
 export abstract class BaseTextNode<T extends TextNodeTypes> extends Node<T> implements HasRaw {
     public abstract type: T;
-    public raw: string;
     public parent: RootNode;
-    public children: TextUnitNode[];
+    public children: TextUnitNode[] = [];
     public range: Range;
-    public constructor(parent: RootNode, children: TextUnitNode[]) {
+
+    public constructor(parent: RootNode, text: string) {
         super(parent);
-        this.children = children;
+        this.splitAndAppend(text);
     }
 
     // public get lines(): CharacterNode[][] {
@@ -127,6 +127,12 @@ export abstract class BaseTextNode<T extends TextNodeTypes> extends Node<T> impl
     //     }
     //     return result;
     // }
+
+    public get raw(): string {
+        let result = '';
+        this.children.forEach(child => result += child.value);
+        return result;
+    }
 
     public calculateRange(parentOffset: Location) {
         this.range = {
@@ -184,28 +190,42 @@ export abstract class BaseTextNode<T extends TextNodeTypes> extends Node<T> impl
             };
         }
     }
+
+    private splitAndAppend(str: string): void {
+
+    }
 }
 
 export class PlainTextNode extends BaseTextNode<'PlainTextNode'> { 
     public type: 'PlainTextNode' = 'PlainTextNode';
+    public children: VisibleTextUnitNode[] = [];
 }
 
 export class AnsiTextNode extends BaseTextNode<'AnsiTextNode'> {
     public type: 'AnsiTextNode' = 'AnsiTextNode';
     public style: AnsiStyle;
 
-    public constructor(parent: RootNode, children: TextUnitNode[], style: AnsiStyle) {
-        super(parent, children);
+    public constructor(parent: RootNode, text: string, style: AnsiStyle) {
+        super(parent, text);
         this.style = style;
     }
 
     public get relatedEscapes(): { before: AnsiEscapeNode[], after: AnsiEscapeNode[] }  {
         const before: AnsiEscapeNode[] = [];
         const after: AnsiEscapeNode[] = [];
-        return { before, after }; 
+        return { before, after };
     }
 }
 
+export type VisibleTextUnitNode = (
+    | CharacterNode
+    | NewLineNode
+);
+
+export type VisibleTextUnitNodeTypes = (
+    | 'CharacterNode'
+    | 'NewLineNode'
+);
 
 export type TextUnitNode = (
     | AnsiEscapeNode
@@ -225,6 +245,7 @@ export abstract class BaseTextUnitNode<T extends TextUnitNodeTypes> extends Node
     public width: number;
     public bytes: number;
     public range: CompoundRange;
+    public parent: TextNode;
 }
 
 export class CharacterNode extends BaseTextUnitNode<'CharacterNode'> {
@@ -238,13 +259,18 @@ export class CharacterNode extends BaseTextUnitNode<'CharacterNode'> {
 export class AnsiEscapeNode extends BaseTextUnitNode<'AnsiEscapeNode'> {
     public type: 'AnsiEscapeNode' = 'AnsiEscapeNode';
     public width: 0 = 0;
-    public constructor(parent: TextNode, params: number[]) {
+    public params: number[];
+    public parent: AnsiTextNode;
+    public constructor(parent: AnsiTextNode, params: number[]) {
         super(parent);
+        this.params = params;
+        this.value = `\u00b1[${params.join(';')}m`;
     }
 }
 
 export class NewLineNode extends BaseTextUnitNode<'NewLineNode'> {
     public type: 'NewLineNode' = 'NewLineNode';
+    public value: string;
     public width: 0 = 0;
     public constructor(parent: TextNode, value: string) {
         super(parent);

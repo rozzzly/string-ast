@@ -1,12 +1,8 @@
-import { RootNode } from "./AST";
+import { RootNode, AnsiEscapeNode, AnsiTextNode, PlainTextNode, TextUnitNode, VisibleTextUnitNode } from "./AST";
 import { AnsiStyle, baseStyle } from "./AnsiStyle";
 import { inRange } from "./misc";
 import * as codes from "./AnsiCodes";
 import { parseColorCode } from "./AnsiColor";
-
-function buildTextNode(raw: string, style: AnsiStyle): TextNode {
-    
-}
 
 const ansiStyleRegex: RegExp = /(\u001b\[(?:\d+;)*\d+m)/u;
 const ansiStyleParamsRegex: RegExp = /\u001b\[((?:\d+;)*\d+)m/u;
@@ -17,16 +13,16 @@ export function parse(str: string): RootNode {
 
     let raw: string = '';
     let escape: RegExpExecArray;
-    let styleMutated: boolean = false;
     const parts: string[] = str.split(ansiStyleRegex); // separate plaintext and escape sequences
-
-    parts.forEach(part => {
+    let escapes: number[][] = [];
+    parts.forEach((part: string, index: number) => {
         if (part === '') return; // `return` is poor-man's continue
         else {
             raw += part;
             if (escape = ansiStyleParamsRegex.exec(part)) {
                 let params: number[] = escape[1].split(';').map(Number);
                 let safeParams: number[] = [...params]; // create a copy - error messages will be more useful if they contain the original sequence of params
+                escapes.push(params);
                 while(params.length) {
                     let current: number = params.pop();
                     if (inRange(codes.FG_START, codes.FG_END, current) || inRange(codes.FG_BRIGHT_START, codes.FG_BRIGHT_END, current)) {
@@ -64,11 +60,42 @@ export function parse(str: string): RootNode {
                     } else {
                         throw new TypeError(`Unsupported ANSI escape code SGR parameter: '${current}' in '${safeParams}'.`);
                     }
-                    styleMutated = true;
+                    if (parts.length === index - 1) { // this is the last part (ie: string ends with ANSI escape sequence)
+                        // ensure `RootNode` ends in a `AnsiEscapeNode`
+                        if (root.children.length === 0 || root.children[root.children.length - 1].type !== 'AnsiTextNode') {
+                            // append a new `AnsiEscapeNode` because one was not there already
+                            root.children.push(new AnsiTextNode(root, '', style))
+                        }
+                        const previous: AnsiTextNode = root.children[root.children.length - 1] as AnsiTextNode;
+                        // create `AnsiEscapeNodes` and attach them to previous `AnsiTextNode`
+                        const escapeNodes: AnsiEscapeNode[] = escapes.map(params => (
+                            new AnsiEscapeNode(previous as AnsiTextNode, params)
+                        ));
+                        previous.children.push(...escapeNodes);
+                    }
                 }
             } else {
-                if (style.equalTo(baseStyle)) {
-
+                if (!escapes.length) { // this should be a PlainTextNode
+                    root.children.push(new PlainTextNode(root, part));
+                } else {
+                    // there are unhandled escapes, but is part has the "base" style. Let's just attach these escapes to the previous `AnsiTextNode`
+                    if (style.equalTo(baseStyle) && root.children.length !== 0 && root.children[root.children.length - 1].type === 'AnsiTextNode') {
+                        const previous: AnsiTextNode = root.children[root.children.length - 1] as AnsiTextNode;
+                        // create `AnsiEscapeNodes` and attach them to previous `AnsiTextNode`
+                        const escapeNodes: AnsiEscapeNode[] = escapes.map(params => (
+                            new AnsiEscapeNode(previous as AnsiTextNode, params)
+                        ));
+                        escapes = [];
+                        root.children.push(new PlainTextNode(root, part));
+                    } else {
+                        const node: AnsiTextNode = new AnsiTextNode(root, part, style);
+                        const escapeNodes: AnsiEscapeNode[] = escapes.map(params => (
+                            new AnsiEscapeNode(node, params)
+                        ));
+                        // put existing escapes before content
+                        node.children.unshift(...escapeNodes);
+                        escapes = [];
+                    }
                 }
             }
         }
