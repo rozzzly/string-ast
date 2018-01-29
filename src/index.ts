@@ -23,7 +23,7 @@ export function parse(str: string): RootNode {
                 let params: number[] = escape[1].split(';').map(Number);
                 let safeParams: number[] = [...params]; // create a copy - error messages will be more useful if they contain the original sequence of params
                 escapes.push(params);
-                while(params.length) {
+                while (params.length) {
                     let current: number = params.pop();
                     if (inRange(codes.FG_START, codes.FG_END, current) || inRange(codes.FG_BRIGHT_START, codes.FG_BRIGHT_END, current)) {
                         style.fgColor = parseColorCode(current, params, safeParams);
@@ -68,8 +68,8 @@ export function parse(str: string): RootNode {
                         }
                         const previous: AnsiTextNode = root.children[root.children.length - 1] as AnsiTextNode;
                         // create `AnsiEscapeNodes` and attach them to previous `AnsiTextNode`
-                        const escapeNodes: AnsiEscapeNode[] = escapes.map(params => (
-                            new AnsiEscapeNode(previous as AnsiTextNode, params)
+                        const escapeNodes: AnsiEscapeNode[] = escapes.map(escapeParams => (
+                            new AnsiEscapeNode(previous as AnsiTextNode, escapeParams)
                         ));
                         previous.children.push(...escapeNodes);
                     }

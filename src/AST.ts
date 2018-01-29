@@ -104,15 +104,19 @@ export class RootNode extends Node<'RootNode'> implements HasRaw {
     }
 }
 
+const newLineSplit
+
 export abstract class BaseTextNode<T extends TextNodeTypes> extends Node<T> implements HasRaw {
     public abstract type: T;
     public parent: RootNode;
     public children: TextUnitNode[] = [];
     public range: Range;
+    public raw: string;
 
     public constructor(parent: RootNode, text: string) {
         super(parent);
-        this.splitAndAppend(text);
+        this.raw = text;
+        this.children = this.splitText(text);
     }
 
     // public get lines(): CharacterNode[][] {
@@ -127,12 +131,6 @@ export abstract class BaseTextNode<T extends TextNodeTypes> extends Node<T> impl
     //     }
     //     return result;
     // }
-
-    public get raw(): string {
-        let result = '';
-        this.children.forEach(child => result += child.value);
-        return result;
-    }
 
     public calculateRange(parentOffset: Location) {
         this.range = {
@@ -191,9 +189,11 @@ export abstract class BaseTextNode<T extends TextNodeTypes> extends Node<T> impl
         }
     }
 
-    private splitAndAppend(str: string): void {
-
+    public toString() {
+        return this.raw;
     }
+
+
 }
 
 export class PlainTextNode extends BaseTextNode<'PlainTextNode'> { 
@@ -207,12 +207,35 @@ export class AnsiTextNode extends BaseTextNode<'AnsiTextNode'> {
 
     public constructor(parent: RootNode, text: string, style: AnsiStyle) {
         super(parent, text);
-        this.style = style;
+         this.style = style;
     }
+
+    /// TODO ::: proxyify `this.children` to recompute `raw`
+    /// when new children are appended
+
+    // public get raw(): string {
+    //     let result = '';
+    //     this.children.forEach(child => {
+    //         if (child.type === 'AnsiEscapeNode') {
+    //             result += child.value;
+    //         }
+    //         result += child.value
+    //     });
+    //     return result;
+    // }
 
     public get relatedEscapes(): { before: AnsiEscapeNode[], after: AnsiEscapeNode[] }  {
         const before: AnsiEscapeNode[] = [];
         const after: AnsiEscapeNode[] = [];
+        let textReached: boolean = false;
+        this.children.forEach(child => {
+            if (child.type === 'AnsiEscapeNode') {
+                if (textReached) after.push(child);
+                else before.push(child);
+            } else {
+                textReached = true;
+            }
+        })
         return { before, after };
     }
 }

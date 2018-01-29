@@ -23,12 +23,13 @@
   "author": "rozzzly",
   "license": "MIT",
   "dependencies": {
-    "@types/lodash": "^4.14.97",
     "ava": "^0.24.0",
     "lodash": "^4.17.4"
   },
   "devDependencies": {
+    "@types/lodash": "^4.14.97",
     "@types/node": "^9.3.0",
-    "typescript": "^2.8.0-dev.20180125"
+    "tslint": "^5.9.1",
+    "typescript": "^2.8.0-dev.20180127"
   }
 }
