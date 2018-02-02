@@ -1,9 +1,9 @@
-import { VisibleTextUnitNode, TextNode } from './AST';
+import { ChunkNode } from './AST';
 
 export type SplitQueue = (
     (
         | string
-        | VisibleTextUnitNode
+        | ChunkNode
     )[]
 );
 
@@ -19,17 +19,27 @@ export interface BaseSplitStrategy<T extends SplitStrategyTypes> {
 }
 
 export interface RegExpSplitStrategy extends BaseSplitStrategy<'RegExp'> {
+    type: 'RegExp';
     pattern: RegExp;
-    onMatch?(match: string, parent: TextNode): TextNode;
+    onMatch?(match: string, parent: ChunkNode): ChunkNode;
 }
 
 export interface JoiningSplitStrategy extends BaseSplitStrategy<'Joining'> {
+    type: 'Joining';
     pattern: RegExp[];
 }
 
 export interface CustomSplitStrategy extends BaseSplitStrategy<'Custom'> {
+    type: 'Custom';
     split(queue: SplitQueue): SplitQueue;
 }
+
+/*export interface SplitStrategyLookup {
+    RegExp: RegExpSplitStrategy;
+    Joining: JoiningSplitStrategy;
+    Custom: CustomSplitStrategy;
+}*/
+// export type SplitStrategy<T extends SplitStrategyTypes = SplitStrategyTypes> = SplitStrategyLookupTable[T];
 
 export type SplitStrategy = (
     | RegExpSplitStrategy
@@ -48,11 +58,11 @@ export const strategies: SplitStrategy[] = [
 ];
 
 
-export function splitText(str: string, parent: TextNode): VisibleTextUnitNode[] {
+export function splitText(str: string, parent: ChunkNode): ChunkNode[] {
     let splitQueue: SplitQueue = [str];
 
     // handle `RegExp`s first
-    strategies.filter(strategy => strategy.type === 'RegExp').forEach(strategy => {
+    strategies.filter((strategy): strategy is RegExpSplitStrategy => strategy.type === 'RegExp').forEach(strategy => {
         const pass: SplitQueue = [];
         splitQueue.forEach(item => {
             if (typeof item === 'string') {
@@ -60,7 +70,7 @@ export function splitText(str: string, parent: TextNode): VisibleTextUnitNode[] 
                 if (strategy.onMatch) {
                     splits.forEach(split => {
                         if (split.match(strategy.pattern)) {
-                            pass.push(strategy.onMatch(split));
+                            pass.push(strategy.onMatch(split, parent));
                         } else {
                             pass.push(split);
                         }
@@ -75,7 +85,7 @@ export function splitText(str: string, parent: TextNode): VisibleTextUnitNode[] 
 
     /// TODO ::: preform another pass ==> JoiningSplitStrategy
     /// TODO ::: preform another pass ==> CustomSplitStrategy
-    /// TODO ::: prefrom another pass ==> Array.from().map(char => new CharacterNode(parent))
+    /// TODO ::: preform another pass ==> Array.from(...).map(char => new CharacterNode(parent))
 
     const result: VisibleTextUnitNode[] = [];
     return result;

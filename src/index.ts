@@ -1,8 +1,8 @@
-import { RootNode, AnsiEscapeNode, AnsiTextNode, PlainTextNode, TextUnitNode, VisibleTextUnitNode } from "./AST";
-import { AnsiStyle, baseStyle } from "./AnsiStyle";
-import { inRange } from "./misc";
-import * as codes from "./AnsiCodes";
-import { parseColorCode } from "./AnsiColor";
+import { RootNode, AnsiEscapeNode, AnsiTextChunkNode, PlainTextChunkNode, TextUnitNode } from './AST';
+import { AnsiStyle, baseStyle } from './AnsiStyle';
+import { inRange } from './misc';
+import * as codes from './AnsiCodes';
+import { parseColorCode } from './AnsiColor';
 
 const ansiStyleRegex: RegExp = /(\u001b\[(?:\d+;)*\d+m)/u;
 const ansiStyleParamsRegex: RegExp = /\u001b\[((?:\d+;)*\d+)m/u;
@@ -62,33 +62,33 @@ export function parse(str: string): RootNode {
                     }
                     if (parts.length === index - 1) { // this is the last part (ie: string ends with ANSI escape sequence)
                         // ensure `RootNode` ends in a `AnsiEscapeNode`
-                        if (root.children.length === 0 || root.children[root.children.length - 1].type !== 'AnsiTextNode') {
+                        if (root.children.length === 0 || root.children[root.children.length - 1].kind !== 'AnsiTextChunkNode') {
                             // append a new `AnsiEscapeNode` because one was not there already
-                            root.children.push(new AnsiTextNode(root, '', style))
+                            root.children.push(new AnsiTextChunkNode(root, '', style))
                         }
-                        const previous: AnsiTextNode = root.children[root.children.length - 1] as AnsiTextNode;
+                        const previous: AnsiTextChunkNode = root.children[root.children.length - 1] as AnsiTextChunkNode;
                         // create `AnsiEscapeNodes` and attach them to previous `AnsiTextNode`
                         const escapeNodes: AnsiEscapeNode[] = escapes.map(escapeParams => (
-                            new AnsiEscapeNode(previous as AnsiTextNode, escapeParams)
+                            new AnsiEscapeNode(previous as AnsiTextChunkNode, escapeParams)
                         ));
                         previous.children.push(...escapeNodes);
                     }
                 }
             } else {
                 if (!escapes.length) { // this should be a PlainTextNode
-                    root.children.push(new PlainTextNode(root, part));
+                    root.children.push(new PlainTextChunkNode(root, part));
                 } else {
                     // there are unhandled escapes, but is part has the "base" style. Let's just attach these escapes to the previous `AnsiTextNode`
-                    if (style.equalTo(baseStyle) && root.children.length !== 0 && root.children[root.children.length - 1].type === 'AnsiTextNode') {
-                        const previous: AnsiTextNode = root.children[root.children.length - 1] as AnsiTextNode;
+                    if (style.equalTo(baseStyle) && root.children.length !== 0 && root.children[root.children.length - 1].kind === 'AnsiTextChunkNode') {
+                        const previous: AnsiTextChunkNode = root.children[root.children.length - 1] as AnsiTextChunkNode;
                         // create `AnsiEscapeNodes` and attach them to previous `AnsiTextNode`
                         const escapeNodes: AnsiEscapeNode[] = escapes.map(params => (
-                            new AnsiEscapeNode(previous as AnsiTextNode, params)
+                            new AnsiEscapeNode(previous as AnsiTextChunkNode, params)
                         ));
                         escapes = [];
-                        root.children.push(new PlainTextNode(root, part));
+                        root.children.push(new PlainTextChunkNode(root, part));
                     } else {
-                        const node: AnsiTextNode = new AnsiTextNode(root, part, style);
+                        const node: AnsiTextChunkNode = new AnsiTextChunkNode(root, part, style);
                         const escapeNodes: AnsiEscapeNode[] = escapes.map(params => (
                             new AnsiEscapeNode(node, params)
                         ));
