@@ -8,7 +8,7 @@ import {
     TextUnitNode,
     CharacterNode,
     AnsiEscapeNode,
-    NewLineCharacterNode,
+    NewLineEscapeNode,
     NodeLookup
 } from './AST';
 import { AnsiStyle, baseStyle } from './AnsiStyle';
@@ -44,6 +44,12 @@ export const lastNode = <K extends Node>(children: Node[]): K => (
 
 export const isLastNodeOfKind = (children: Node[], kind: NodeKind): boolean => (
     children.length && children[children.length - 1].kind === kind
+);
+
+export const stripAnsiEscapes = (str: string): string => (
+    str.split(ansiStyleRegex).reduce((reduction, part) => (
+        ansiStyleRegex.test(part) ? reduction : reduction + part
+    ))
 );
 
 export function parse(str: string): RootNode {
@@ -118,10 +124,10 @@ export function parse(str: string): RootNode {
                 if (!escapes.length) { // this should be a `PlainTextChunkNode`
                     if (newLineRegex.test(part)) { // there are this `PlainTextChunkNode` contains one or more `NewLineChunkNode`s
                         const split = part.split(newLineRegex);
-                        const built: (NewLineCharacterNode | PlainTextChunkNode)[] = [];
+                        const built: (NewLineEscapeNode | PlainTextChunkNode)[] = [];
                         split.forEach(piece => {
                             if (newLineRegex.test(piece)) {
-                                built.push(new NewLineCharacterNode(undefined, piece));
+                                built.push(new NewLineEscapeNode(undefined, piece));
                             } else if (piece !== '') {
                                 // check to make sure chunk is not empty incase of sequential new lines
                                 // Example: sequential escapes:
@@ -135,8 +141,8 @@ export function parse(str: string): RootNode {
                             current.kind === previous.kind
                         ));
                         grouped.forEach(group => {
-                            if (group[0].kind === 'NewLineCharacterNode') {
-                                root.children.push(new NewLineChunkNode(root, group as NewLineCharacterNode[]));
+                            if (group[0].kind === 'NewLineEscapeNode') {
+                                root.children.push(new NewLineChunkNode(root, group as NewLineEscapeNode[]));
                             } else {
                                 root.children.push(group[0] as PlainTextChunkNode);
                             }
@@ -160,7 +166,7 @@ export function parse(str: string): RootNode {
                             new AnsiEscapeNode(node, params)
                         ));
                         // put existing escapes before content
-                        node.children.unshift(...escapeNodes);
+                        node.children.unshift(...escapeNodes); /// TODO figure out wtf this is
                         escapes = [];
                     }
                 }

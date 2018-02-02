@@ -1,9 +1,10 @@
-import { ChunkNode } from './AST';
+import { ChunkNode, PlainTextChunkNode, NewLineChunkNode } from './AST';
 
 export type SplitQueue = (
     (
         | string
-        | ChunkNode
+        | NewLineChunkNode
+        | PlainTextChunkNode
     )[]
 );
 
@@ -21,7 +22,7 @@ export interface BaseSplitStrategy<T extends SplitStrategyTypes> {
 export interface RegExpSplitStrategy extends BaseSplitStrategy<'RegExp'> {
     type: 'RegExp';
     pattern: RegExp;
-    onMatch?(match: string, parent: ChunkNode): ChunkNode;
+    onMatch?(match: string, parent: ChunkNode): PlainTextChunkNode | NewLineChunkNode;
 }
 
 export interface JoiningSplitStrategy extends BaseSplitStrategy<'Joining'> {
@@ -50,7 +51,10 @@ export type SplitStrategy = (
 const NewLineSplit: RegExpSplitStrategy = {
     type: 'RegExp',
     name: 'NewLine',
-    pattern: /(\u000A|(?:\r?\n))/u
+    pattern: /(\u000A|(?:\r?\n))/u,
+    onMatch(match, parent): NewLineChunkNode {
+        return new NewLineChunkNode()
+    }
 };
 
 export const strategies: SplitStrategy[] = [
