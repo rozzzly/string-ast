@@ -25,18 +25,24 @@ export function normalize(raw: string): string {
 }
 
 export function previousNodeOfKind<K extends NodeKind>(children: Node[], kind: K): NodeLookup[K] {
-    let last: NodeLookup[K] = undefined;
-    children.forEach(child => {
-        if (child.kind === kind) last = child;
-    });
-    return last;
-};
+    for (let i = children.length - 1; i >= 0; i--) {
+        if (children[i].kind === kind) return children[i];
+    }
+    return undefined;
+}
 
-export const previousNode = <K extends Node>(children: Node[]): K => (
+export function hasPreviousNodeOfKind(children: Node[], kind: NodeKind): boolean {
+    for (let i = children.length - 1; i >= 0; i--) {
+        if (children[i].kind === kind) return true;
+    }
+    return false;
+}
+
+export const lastNode = <K extends Node>(children: Node[]): K => (
     children.length ? children[children.length - 1] as K : undefined
 );
 
-export const isPreviousNodeOfKind = (children: Node[], kind: NodeKind): boolean => (
+export const isLastNodeOfKind = (children: Node[], kind: NodeKind): boolean => (
     children.length && children[children.length - 1].kind === kind
 );
 
@@ -96,11 +102,11 @@ export function parse(str: string): RootNode {
                     }
                     if (parts.length === index - 1) { // this is the last part (ie: string ends with ANSI escape sequence)
                         // ensure `RootNode` ends in a `AnsiEscapeNode`
-                        if (!isPreviousNodeOfKind(root.children, 'AnsiTextChunkNode')) {
+                        if (!isLastNodeOfKind(root.children, 'AnsiTextChunkNode')) {
                             // append a new `AnsiEscapeNode` because one was not there already
                             root.children.push(new AnsiTextChunkNode(root, '', style));
                         }
-                        const previous: AnsiTextChunkNode = root.children[root.children.length - 1] as AnsiTextChunkNode;
+                        const previous: AnsiTextChunkNode = lastNode(root.children);
                         // create `AnsiEscapeNodes` and attach them to previous `AnsiTextChunkNode`
                         const escapeNodes: AnsiEscapeNode[] = escapes.map(escapeParams => (
                             new AnsiEscapeNode(previous as AnsiTextChunkNode, escapeParams)
@@ -135,12 +141,13 @@ export function parse(str: string): RootNode {
                                 root.children.push(group[0] as PlainTextChunkNode);
                             }
                         });
+                    } else {
+                        root.children.push(new PlainTextChunkNode(root, part));
                     }
-                    root.children.push(new PlainTextChunkNode(root, part));
                 } else {
                     // there are unhandled escapes, but is part has the "base" style. Let's just attach these escapes to the previous `AnsiTextChunkNode`
-                    if (style.equalTo(baseStyle) && isPreviousNodeOfKind(root.children, 'AnsiTextChunkNode')) {
-                        const previous: AnsiTextChunkNode = previousNode(root.children);
+                    if (style.equalTo(baseStyle) && isLastNodeOfKind(root.children, 'AnsiTextChunkNode')) {
+                        const previous: AnsiTextChunkNode = lastNode(root.children);
                         // create `AnsiEscapeNodes` and attach them to previous `AnsiTextChunkNode`
                         const escapeNodes: AnsiEscapeNode[] = escapes.map(params => (
                             new AnsiEscapeNode(previous as AnsiTextChunkNode, params)
