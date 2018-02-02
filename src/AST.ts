@@ -24,10 +24,11 @@ export interface CompoundRange extends Range {
     stop: CompoundLocation;
 }
 
-export type Nodes = (
+export type Node = (
     | RootNode
     | PlainTextChunkNode
     | AnsiTextChunkNode
+    | NewLineChunkNode
     | CharacterNode
     | NewLineCharacterNode
     | AnsiEscapeNode
@@ -47,28 +48,36 @@ export interface HasRaw {
     raw: string;
 }
 
-export interface Derived {
-    derivedFrom?: this;
+export interface HasNormalized {
+    normalized: string;
 }
 
-export class Node<K extends NodeKind> {
-    public kind: K;
+export interface Derived<T extends BaseNode<any>> {
+    derivedFrom?: T;
+}
+
+export abstract class BaseNode<K extends NodeKind> {
+    public abstract kind: K;
     public range: Range;
-    public parent: Node<NodeKind>;
-    public constructor(parent: Node<NodeKind>) {
+    public parent: BaseNode<NodeKind>;
+
+    public constructor(parent: BaseNode<NodeKind>) {
         this.parent = parent;
     }
 }
 
-export class RootNode extends Node<'RootNode'> implements HasRaw {
+ export class RootNode extends BaseNode<'RootNode'> implements HasRaw, HasNormalized {
     public kind: 'RootNode' = 'RootNode';
     public raw: string;
+    public normalized: string;
     public children: ChunkNode[];
     public range: Range;
 
-    public constructor() {
+    public constructor(raw: string, normalized: string) {
         super(undefined);
         this.range = undefined;
+        this.raw = raw;
+        this.normalized = normalized;
     }
 
     public splitMultiLine(): this {
@@ -109,7 +118,7 @@ export type ChunkTypes = (
 );
 
 
-export abstract class BaseChunkNode<K extends ChunkTypes> extends Node<K> implements HasRaw {
+export abstract class BaseChunkNode<K extends ChunkTypes> extends BaseNode<K> implements HasRaw {
     public abstract kind: K;
     public parent: RootNode;
     public children: TextUnitNode[] = [];
@@ -199,13 +208,26 @@ export abstract class BaseChunkNode<K extends ChunkTypes> extends Node<K> implem
 
 export class NewLineChunkNode extends BaseChunkNode<'NewLineChunkNode'> {
     public kind: 'NewLineChunkNode' = 'NewLineChunkNode';
-    public children: NewLineCharacterNode[] = [];
+    public children: NewLineCharacterNode[];
+
+    public constructor(parent: RootNode, children: NewLineCharacterNode[]) {
+        super(parent, children.reduce((reduction, child) => reduction + child.value, ''));
+        this.children = children.map(child => {
+            child.parent = this;
+            return child;
+        });
+    }
 }
 
 
 export class PlainTextChunkNode extends BaseChunkNode<'PlainTextChunkNode'> {
     public kind: 'PlainTextChunkNode' = 'PlainTextChunkNode';
     public children: CharacterNode[] = [];
+
+    public constructor(parent: RootNode, text: string) {
+        super(parent, text);
+        /// TODO ::: run splitter on `text` then set parent of item in the resulting `CharacterNode`[] to `this`
+    }
 }
 
 export class AnsiTextChunkNode extends BaseChunkNode<'AnsiTextChunkNode'> {
@@ -216,6 +238,7 @@ export class AnsiTextChunkNode extends BaseChunkNode<'AnsiTextChunkNode'> {
     public constructor(parent: RootNode, text: string, style: AnsiStyle) {
         super(parent, text);
         this.style = style;
+        /// TODO ::: run splitter on `text` then set parent of item in the resulting `CharacterNode`[] to `this`
     }
 
     /// TODO ::: proxyify `this.children` to recompute `raw`
@@ -260,7 +283,7 @@ export type TextUnitNodeKind = (
     | 'NewLineCharacterNode'
 );
 
-export abstract class BaseTextUnitNode<K extends TextUnitNodeKind> extends Node<K> {
+export abstract class BaseTextUnitNode<K extends TextUnitNodeKind> extends BaseNode<K> {
     public abstract kind: K;
     public value: string;
     public width: number;
