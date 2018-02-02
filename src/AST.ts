@@ -44,6 +44,16 @@ export type NodeKind = (
     | 'AnsiEscapeNode'
 );
 
+export interface NodeLookup {
+    RootNode: RootNode;
+    PlainTextChunkNode: PlainTextChunkNode;
+    AnsiTextChunkNode: AnsiTextChunkNode;
+    NewLineChunkNode: NewLineChunkNode;
+    CharacterNode: CharacterNode;
+    NewLineCharacterNode: NewLineCharacterNode;
+    AnsiEscapeNode: AnsiEscapeNode;
+}
+
 export interface HasRaw {
     raw: string;
 }
