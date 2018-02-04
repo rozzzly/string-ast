@@ -23,13 +23,18 @@
   "author": "rozzzly",
   "license": "MIT",
   "dependencies": {
-    "ava": "^0.24.0",
-    "lodash": "^4.17.4"
+    "ava": "^0.25.0",
+    "lodash": "^4.17.5"
   },
   "devDependencies": {
-    "@types/lodash": "^4.14.97",
-    "@types/node": "^9.3.0",
+    "@types/lodash": "^4.14.100",
+    "@types/node": "^9.4.0",
     "tslint": "^5.9.1",
     "typescript": "^2.8.0-dev.20180204"
+  },
+  "ava": {
+    "files": [
+      "./bin/test/**/*.js"
+    ]
   }
 }

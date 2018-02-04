@@ -87,6 +87,7 @@ export abstract class BaseNode<K extends NodeKind> {
         super(undefined);
         this.range = undefined;
         this.raw = raw;
+        this.children = [];
         this.normalized = normalized;
     }
 
@@ -232,6 +233,7 @@ export class AnsiTextSpanNode extends BaseTextSpanNode<'AnsiTextSpanNode'> {
 
     public constructor(parent: RootNode, text: string, style: AnsiStyle) {
         super(parent, text, stripAnsiEscapes(text));
+        this.style = style;
     }
 
     /// TODO ::: proxyify `this.children` to recompute `raw`

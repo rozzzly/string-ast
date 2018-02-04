@@ -140,6 +140,7 @@ export function parse(str: string): RootNode {
                         ));
                         // put existing escapes before content
                         node.children.unshift(...escapeNodes);
+                        root.children.push(node);
                         escapes = [];
                     }
                 }
