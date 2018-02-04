@@ -1,6 +1,6 @@
 import { AnsiStyle } from './AnsiStyle';
 import { widthOf } from './width';
-import { stripAnsiEscapes } from '.';
+import { stripAnsiEscapes } from './';
 
 export interface Location {
     offset: number;
