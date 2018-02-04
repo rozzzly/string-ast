@@ -67,7 +67,7 @@ export function parse(str: string): RootNode {
             if (escape = ansiStyleParamsRegex.exec(part)) {
                 let params: number[] = escape[1].split(';').map(Number);
                 let safeParams: number[] = [...params]; // create a copy - error messages will be more useful if they contain the original sequence of params
-                escapes.push(params);
+                escapes.push(safeParams);
                 while (params.length) {
                     let current: number = params.pop();
                     if (inRange(codes.FG_START, codes.FG_END, current) || inRange(codes.FG_BRIGHT_START, codes.FG_BRIGHT_END, current)) {
