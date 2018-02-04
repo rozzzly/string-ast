@@ -28,9 +28,8 @@ export interface CompoundRange extends Range {
 
 export type Node = (
     | RootNode
-    | PlainTextChunkNode
-    | AnsiTextChunkNode
-    | NewLineChunkNode
+    | PlainTextSpanNode
+    | AnsiTextSpanNode
     | CharacterNode
     | NewLineEscapeNode
     | AnsiEscapeNode
@@ -38,8 +37,8 @@ export type Node = (
 
 export type NodeKind = (
     | 'RootNode'
-    | 'PlainTextChunkNode'
-    | 'AnsiTextChunkNode'
+    | 'PlainTextSpanNode'
+    | 'AnsiTextSpanNode'
     | 'CharacterNode'
     | 'NewLineEscapeNode'
     | 'AnsiEscapeNode'
@@ -47,8 +46,8 @@ export type NodeKind = (
 
 export interface NodeLookup {
     RootNode: RootNode;
-    PlainTextChunkNode: PlainTextChunkNode;
-    AnsiTextChunkNode: AnsiTextChunkNode;
+    PlainTextSpanNode: PlainTextSpanNode;
+    AnsiTextSpanNode: AnsiTextSpanNode;
     CharacterNode: CharacterNode;
     NewLineEscapeNode: NewLineEscapeNode;
     AnsiEscapeNode: AnsiEscapeNode;
@@ -80,7 +79,7 @@ export abstract class BaseNode<K extends NodeKind> {
     public kind: 'RootNode' = 'RootNode';
     public raw: string;
     public normalized: string;
-    public children: ChunkNode[];
+    public children: TextSpan[];
     public range: Range;
 
     public constructor(raw: string, normalized: string) {
@@ -115,21 +114,21 @@ export abstract class BaseNode<K extends NodeKind> {
 }
 
 
-export type ChunkNode = (
-    | PlainTextChunkNode
-    | AnsiTextChunkNode
+export type TextSpan = (
+    | PlainTextSpanNode
+    | AnsiTextSpanNode
 );
 
-export type ChunkTypes = (
-    | 'PlainTextChunkNode'
-    | 'AnsiTextChunkNode'
+export type TextSpanKind = (
+    | 'PlainTextSpanNode'
+    | 'AnsiTextSpanNode'
 );
 
 
-export abstract class BaseChunkNode<K extends ChunkTypes> extends BaseNode<K> implements HasRaw {
+export abstract class BaseTextSpanNode<K extends TextSpanKind> extends BaseNode<K> implements HasRaw {
     public abstract kind: K;
     public parent: RootNode;
-    public children: TextUnitNode[] = [];
+    public children: TextChunkNode[] = [];
     public range: Range;
     public raw: string;
     public text: string;
@@ -216,8 +215,8 @@ export abstract class BaseChunkNode<K extends ChunkTypes> extends BaseNode<K> im
         return this.raw;
     }
 }
-export class PlainTextChunkNode extends BaseChunkNode<'PlainTextChunkNode'> {
-    public kind: 'PlainTextChunkNode' = 'PlainTextChunkNode';
+export class PlainTextSpanNode extends BaseTextSpanNode<'PlainTextSpanNode'> {
+    public kind: 'PlainTextSpanNode' = 'PlainTextSpanNode';
     public children: CharacterNode[] = [];
 
     public constructor(parent: RootNode, text: string) {
@@ -225,8 +224,8 @@ export class PlainTextChunkNode extends BaseChunkNode<'PlainTextChunkNode'> {
     }
 }
 
-export class AnsiTextChunkNode extends BaseChunkNode<'AnsiTextChunkNode'> {
-    public kind: 'AnsiTextChunkNode' = 'AnsiTextChunkNode';
+export class AnsiTextSpanNode extends BaseTextSpanNode<'AnsiTextSpanNode'> {
+    public kind: 'AnsiTextSpanNode' = 'AnsiTextSpanNode';
     public style: AnsiStyle;
     public children: (CharacterNode | AnsiEscapeNode)[];
 
@@ -266,57 +265,57 @@ export class AnsiTextChunkNode extends BaseChunkNode<'AnsiTextChunkNode'> {
     }
 }
 
-export type TextUnitNode = (
+export type TextChunkNode = (
     | CharacterNode
     | AnsiEscapeNode
     | NewLineEscapeNode
 );
 
-export type TextUnitNodeKind = (
+export type TextChunkNodeKind = (
     | 'CharacterNode'
     | 'AnsiEscapeNode'
     | 'NewLineEscapeNode'
 );
 
-export abstract class BaseTextUnitNode<K extends TextUnitNodeKind> extends BaseNode<K> {
+export abstract class BaseTextChunkNode<K extends TextChunkNodeKind> extends BaseNode<K> {
     public abstract kind: K;
     public abstract width: number;
     public value: string;
     public bytes: number;
     public range: CompoundRange;
-    public parent: ChunkNode;
+    public parent: TextSpan;
 
-    public constructor(parent: ChunkNode, value: string) {
+    public constructor(parent: TextSpan, value: string) {
         super(parent);
         this.value = value;
         this.bytes = value.length;
     }
 }
 
-export class CharacterNode extends BaseTextUnitNode<'CharacterNode'> {
+export class CharacterNode extends BaseTextChunkNode<'CharacterNode'> {
     public kind: 'CharacterNode' = 'CharacterNode';
     public width: number;
 
-    public constructor(parent: ChunkNode, value: string) {
+    public constructor(parent: TextSpan, value: string) {
         super(parent, value);
         this.width = widthOf(value);
     }
 }
 
-export class AnsiEscapeNode extends BaseTextUnitNode<'AnsiEscapeNode'> {
+export class AnsiEscapeNode extends BaseTextChunkNode<'AnsiEscapeNode'> {
     public kind: 'AnsiEscapeNode' = 'AnsiEscapeNode';
     public width: 0 = 0;
     public params: number[];
-    public parent: AnsiTextChunkNode;
-    public constructor(parent: AnsiTextChunkNode, params: number[]) {
+    public parent: AnsiTextSpanNode;
+    public constructor(parent: AnsiTextSpanNode, params: number[]) {
         super(parent, `\u00b1[${params.join(';')}m`);
         this.params = params;
     }
 }
 
-export class NewLineEscapeNode extends BaseTextUnitNode<'NewLineEscapeNode'> {
+export class NewLineEscapeNode extends BaseTextChunkNode<'NewLineEscapeNode'> {
     public kind: 'NewLineEscapeNode' = 'NewLineEscapeNode';
     public value: string;
     public width: 0 = 0;
-    public parent: ChunkNode;
+    public parent: TextSpan;
 }

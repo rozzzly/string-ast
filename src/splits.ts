@@ -1,10 +1,10 @@
-import { ChunkNode, PlainTextChunkNode, NewLineChunkNode } from './AST';
+import { TextSpan, PlainTextSpanNode, NewLineChunkNode, TextChunkNode, CharacterNode, NewLineEscapeNode } from './AST';
 
 export type SplitQueue = (
     (
         | string
         | NewLineChunkNode
-        | PlainTextChunkNode
+        | PlainTextSpanNode
     )[]
 );
 
@@ -22,7 +22,7 @@ export interface BaseSplitStrategy<T extends SplitStrategyTypes> {
 export interface RegExpSplitStrategy extends BaseSplitStrategy<'RegExp'> {
     type: 'RegExp';
     pattern: RegExp;
-    onMatch?(match: string, parent: ChunkNode): PlainTextChunkNode | NewLineChunkNode;
+    onMatch?(match: string, parent: TextSpan): CharacterNode | NewLineEscapeNode;
 }
 
 export interface JoiningSplitStrategy extends BaseSplitStrategy<'Joining'> {
@@ -62,7 +62,7 @@ export const strategies: SplitStrategy[] = [
 ];
 
 
-export function splitText(str: string, parent: ChunkNode): ChunkNode[] {
+export function splitText(str: string, parent: TextSpan): TextChunkNode[] {
     let splitQueue: SplitQueue = [str];
 
     // handle `RegExp`s first
@@ -91,6 +91,6 @@ export function splitText(str: string, parent: ChunkNode): ChunkNode[] {
     /// TODO ::: preform another pass ==> CustomSplitStrategy
     /// TODO ::: preform another pass ==> Array.from(...).map(char => new CharacterNode(parent))
 
-    const result: VisibleTextUnitNode[] = [];
+    const result: TextChunkNode[] = [];
     return result;
 }
