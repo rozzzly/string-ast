@@ -1,6 +1,7 @@
 import { AnsiStyle } from './AnsiStyle';
 import { widthOf } from './width';
 import { stripAnsiEscapes } from './';
+import { splitText } from './splits';
 
 export interface Location {
     offset: number;
@@ -79,7 +80,7 @@ export abstract class BaseNode<K extends NodeKind> {
     public kind: 'RootNode' = 'RootNode';
     public raw: string;
     public normalized: string;
-    public children: TextSpan[];
+    public children: TextSpanNode[];
     public range: Range;
 
     public constructor(raw: string, normalized: string) {
@@ -114,7 +115,7 @@ export abstract class BaseNode<K extends NodeKind> {
 }
 
 
-export type TextSpan = (
+export type TextSpanNode = (
     | PlainTextSpanNode
     | AnsiTextSpanNode
 );
@@ -128,7 +129,7 @@ export type TextSpanKind = (
 export abstract class BaseTextSpanNode<K extends TextSpanKind> extends BaseNode<K> implements HasRaw {
     public abstract kind: K;
     public parent: RootNode;
-    public children: TextChunkNode[] = [];
+    public children: TextChunkNode[];
     public range: Range;
     public raw: string;
     public text: string;
@@ -139,6 +140,7 @@ export abstract class BaseTextSpanNode<K extends TextSpanKind> extends BaseNode<
         super(parent);
         this.text = text;
         this.raw = raw;
+        this.children = splitText(text, this as TextSpanNode);
     }
 
     // public get lines(): CharacterNode[][] {
@@ -217,7 +219,7 @@ export abstract class BaseTextSpanNode<K extends TextSpanKind> extends BaseNode<
 }
 export class PlainTextSpanNode extends BaseTextSpanNode<'PlainTextSpanNode'> {
     public kind: 'PlainTextSpanNode' = 'PlainTextSpanNode';
-    public children: CharacterNode[] = [];
+    public children: CharacterNode[];
 
     public constructor(parent: RootNode, text: string) {
         super(parent, text);
@@ -227,12 +229,9 @@ export class PlainTextSpanNode extends BaseTextSpanNode<'PlainTextSpanNode'> {
 export class AnsiTextSpanNode extends BaseTextSpanNode<'AnsiTextSpanNode'> {
     public kind: 'AnsiTextSpanNode' = 'AnsiTextSpanNode';
     public style: AnsiStyle;
-    public children: (CharacterNode | AnsiEscapeNode)[];
 
     public constructor(parent: RootNode, text: string, style: AnsiStyle) {
-        super(parent, text);
-        this.style = style;
-        this.text = stripAnsiEscapes(this.text);
+        super(parent, text, stripAnsiEscapes(text));
     }
 
     /// TODO ::: proxyify `this.children` to recompute `raw`
@@ -283,9 +282,9 @@ export abstract class BaseTextChunkNode<K extends TextChunkNodeKind> extends Bas
     public value: string;
     public bytes: number;
     public range: CompoundRange;
-    public parent: TextSpan;
+    public parent: TextSpanNode;
 
-    public constructor(parent: TextSpan, value: string) {
+    public constructor(parent: TextSpanNode, value: string) {
         super(parent);
         this.value = value;
         this.bytes = value.length;
@@ -296,7 +295,7 @@ export class CharacterNode extends BaseTextChunkNode<'CharacterNode'> {
     public kind: 'CharacterNode' = 'CharacterNode';
     public width: number;
 
-    public constructor(parent: TextSpan, value: string) {
+    public constructor(parent: TextSpanNode, value: string) {
         super(parent, value);
         this.width = widthOf(value);
     }
@@ -317,5 +316,5 @@ export class NewLineEscapeNode extends BaseTextChunkNode<'NewLineEscapeNode'> {
     public kind: 'NewLineEscapeNode' = 'NewLineEscapeNode';
     public value: string;
     public width: 0 = 0;
-    public parent: TextSpan;
+    public parent: TextSpanNode;
 }

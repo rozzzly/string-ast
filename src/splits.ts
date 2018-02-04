@@ -1,10 +1,9 @@
-import { TextSpan, PlainTextSpanNode, NewLineChunkNode, TextChunkNode, CharacterNode, NewLineEscapeNode } from './AST';
+import { TextSpanNode, PlainTextSpanNode, NewLineEscapeNode, TextChunkNode, CharacterNode } from './AST';
 
 export type SplitQueue = (
     (
         | string
-        | NewLineChunkNode
-        | PlainTextSpanNode
+        | TextChunkNode
     )[]
 );
 
@@ -22,7 +21,7 @@ export interface BaseSplitStrategy<T extends SplitStrategyTypes> {
 export interface RegExpSplitStrategy extends BaseSplitStrategy<'RegExp'> {
     type: 'RegExp';
     pattern: RegExp;
-    onMatch?(match: string, parent: TextSpan): CharacterNode | NewLineEscapeNode;
+    onMatch?(match: string, parent: TextSpanNode): CharacterNode | NewLineEscapeNode;
 }
 
 export interface JoiningSplitStrategy extends BaseSplitStrategy<'Joining'> {
@@ -52,9 +51,9 @@ const NewLineSplit: RegExpSplitStrategy = {
     type: 'RegExp',
     name: 'NewLine',
     pattern: /(\u000A|(?:\r?\n))/u,
-    onMatch(match, parent): NewLineChunkNode {
-        return new NewLineChunkNode()
-    }
+    onMatch: (match, parent): NewLineEscapeNode => (
+        new NewLineEscapeNode(parent, match)
+    )
 };
 
 export const strategies: SplitStrategy[] = [
@@ -62,35 +61,44 @@ export const strategies: SplitStrategy[] = [
 ];
 
 
-export function splitText(str: string, parent: TextSpan): TextChunkNode[] {
-    let splitQueue: SplitQueue = [str];
-
+export function splitText(str: string, parent: TextSpanNode): TextChunkNode[] {
+    let resultQueue: SplitQueue = [str];
+    let passQueue: SplitQueue = [];
     // handle `RegExp`s first
     strategies.filter((strategy): strategy is RegExpSplitStrategy => strategy.type === 'RegExp').forEach(strategy => {
-        const pass: SplitQueue = [];
-        splitQueue.forEach(item => {
+        passQueue =  [];
+        resultQueue.forEach(item => {
             if (typeof item === 'string') {
                 const splits = item.split(strategy.pattern);
                 if (strategy.onMatch) {
                     splits.forEach(split => {
                         if (split.match(strategy.pattern)) {
-                            pass.push(strategy.onMatch(split, parent));
+                            passQueue.push(strategy.onMatch(split, parent));
                         } else {
-                            pass.push(split);
+                            passQueue.push(split);
                         }
                     });
                 }
             } else {
-                pass.push(item);
+                passQueue.push(item);
             }
         });
-        splitQueue = pass;
+        resultQueue = [...passQueue];
     });
 
     /// TODO ::: preform another pass ==> JoiningSplitStrategy
     /// TODO ::: preform another pass ==> CustomSplitStrategy
-    /// TODO ::: preform another pass ==> Array.from(...).map(char => new CharacterNode(parent))
+    /// Preform another pass on remaining strings ==> Array.from(...).map(char => new CharacterNode(parent))
+    passQueue = [];
+    resultQueue.forEach(item => {
+        if (typeof item === 'string') {
+            const chunks: CharacterNode[]  = Array.from(item).map(character => new CharacterNode(parent, character));
+            passQueue.push(...chunks);
+        } else {
+            passQueue.push(item);
+        }
+    });
+    resultQueue = [...passQueue];
 
-    const result: TextChunkNode[] = [];
-    return result;
+    return resultQueue as TextChunkNode[];
 }
