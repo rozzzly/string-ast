@@ -114,7 +114,7 @@ export function parse(str: string): RootNode {
                         const previous: AnsiTextSpanNode = lastNode(root.children);
                         // create `AnsiEscapeNodes` and attach them to previous `AnsiTextChunkNode`
                         const escapeNodes: AnsiEscapeNode[] = escapes.map(escapeParams => (
-                            new AnsiEscapeNode(previous as AnsiTextSpanNode, escapeParams)
+                            new AnsiEscapeNode(previous, escapeParams)
                         ));
                         previous.children.push(...escapeNodes);
                     }
