@@ -1,55 +1,14 @@
-import {
-    Node,
-    NodeKind,
-    RootNode,
-    AnsiTextSpanNode,
-    PlainTextSpanNode,
-    TextChunkNode,
-    CharacterNode,
-    AnsiEscapeNode,
-    NewLineEscapeNode,
-    NodeLookup
-} from './AST';
-import { AnsiStyle, baseStyle } from './AnsiStyle';
+import * as codes from './Ansi/AnsiCodes';
+import { RootNode } from './AST/RootNode';
+import { AnsiEscapeNode } from './AST/TextChunkNode/AnsiEscapeNode';
+import { PlainTextSpanNode } from './AST/TextSpanNode/PlainTextSpanNode';
+import { Node, NodeKind, NodeLookup } from './AST';
+import { AnsiStyle, baseStyle } from './Ansi/AnsiStyle';
 import { inRange, groupContiguous } from './misc';
-import * as codes from './AnsiCodes';
-import { parseColorCode } from './AnsiColor';
-
-const newLineRegex: RegExp = /(\u000a|(?:\r?\n))/u;
-const ansiStyleRegex: RegExp = /(\u001b\[(?:\d+;)*\d+m)/u;
-const ansiStyleParamsRegex: RegExp = /\u001b\[((?:\d+;)*\d+)m/u;
-
-export function normalize(raw: string): string {
-    return raw.normalize('NFC');
-}
-
-export function previousNodeOfKind<K extends NodeKind>(children: Node[], kind: K): NodeLookup[K] {
-    for (let i = children.length - 1; i >= 0; i--) {
-        if (children[i].kind === kind) return children[i];
-    }
-    return undefined;
-}
-
-export function hasPreviousNodeOfKind(children: Node[], kind: NodeKind): boolean {
-    for (let i = children.length - 1; i >= 0; i--) {
-        if (children[i].kind === kind) return true;
-    }
-    return false;
-}
-
-export const lastNode = <K extends Node>(children: Node[]): K => (
-    children.length ? children[children.length - 1] as K : undefined
-);
-
-export const isLastNodeOfKind = (children: Node[], kind: NodeKind): boolean => (
-    children.length && children[children.length - 1].kind === kind
-);
-
-export const stripAnsiEscapes = (str: string): string => (
-    str.split(ansiStyleRegex).reduce((reduction, part) => (
-        ansiStyleRegex.test(part) ? reduction : reduction + part
-    ))
-);
+import { parseColorCode } from './Ansi/AnsiColor';
+import { ansiStyleRegex, normalize, ansiStyleParamsRegex } from './Ansi/utils';
+import { AnsiTextSpanNode } from './AST/TextSpanNode/AnsiTextSpanNode';
+import { isLastNodeOfKind, lastNode } from './AST/navigation';
 
 export function parse(str: string): RootNode {
     const normalized = normalize(str);
@@ -147,6 +106,7 @@ export function parse(str: string): RootNode {
             }
         }
     });
+    root.calculateRange();
 
     return root;
 }

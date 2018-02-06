@@ -1,5 +1,5 @@
-import { inRange } from "./misc";
-import { FG_CUSTOM, BG_CUSTOM, COLOR_MODE_8BIT, COLOR_MODE_24BIT } from "./AnsiCodes";
+import { inRange } from '../misc';
+import { FG_CUSTOM, BG_CUSTOM, COLOR_MODE_8BIT, COLOR_MODE_24BIT } from './AnsiCodes';
 
 export interface RGB {
     r: number;
@@ -24,7 +24,7 @@ export type AnsiColor = (
     | AnsiColor_3Bit
     | AnsiColor_8Bit
     | AnsiColor_24Bit
-)
+);
 
 export abstract class AnsiColorBase {
     public abstract mode: AnsiColorMode;
@@ -143,9 +143,9 @@ export function parseColorCode(param: number, params: number[], paramsSafe: numb
 
 
 export interface AnsiColorPalette {
-    BLACK: AnsiColor,
-    RED: AnsiColor,
-    GREEN: AnsiColor,
+    BLACK: AnsiColor;
+    RED: AnsiColor;
+    GREEN: AnsiColor;
     YELLOW: AnsiColor;
     BLUE: AnsiColor;
     MAGENTA: AnsiColor;
@@ -194,4 +194,4 @@ export const Colors: {
         },
         DEFAULT: new AnsiColor_3Bit(49),
     }
-}
+};

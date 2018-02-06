@@ -1,4 +1,7 @@
-import { TextSpanNode, PlainTextSpanNode, NewLineEscapeNode, TextChunkNode, CharacterNode } from './AST';
+import { TextChunkNode } from './AST/TextChunkNode';
+import { TextSpanNode } from './AST/TextSpanNode';
+import { CharacterNode } from './AST/TextChunkNode/CharacterNode';
+import { NewLineEscapeNode } from './AST/TextChunkNode/NewLineEscapeNode';
 
 export type SplitQueue = (
     (

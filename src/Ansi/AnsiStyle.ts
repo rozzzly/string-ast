@@ -1,6 +1,6 @@
 import * as _ from 'lodash';
 
-import { AnsiColor, Colors } from "./AnsiColor";
+import { AnsiColor, Colors } from './AnsiColor';
 import * as codes from './AnsiCodes';
 
 export type AnsiTextWeight = (
@@ -173,7 +173,7 @@ export class AnsiStyle implements AnsiStyleData {
             && this.underline === other.underline
             && this.inverted === other.inverted
             && this.strike === other.strike
-        )
+        );
     }
 }
 
