@@ -1,6 +1,6 @@
 import { BaseNode } from './BaseNode';
 
-export interface Serializable {
+export interface PrettyPrint {
     toJSON(): object;
     toJSON(key: string): object;
     toJSON(key?: string): object;
@@ -18,6 +18,9 @@ export const MemoizedData: unique symbol = Symbol('[string-ast]::Node(HasMemoize
 export type MemoizedData = typeof MemoizedData;
 
 export interface HasMemoizedData<D extends {}> {
+    // TODO force implementors to have public getters with the same name
+    // Will require index intersection hack..
+    // ex: [K in keyof D]: D[K]
     [MemoizedData]: D;
     isMemoizedDataCurrent(): boolean;
     isMemoizedDataCurrent<K extends keyof D = keyof D>(key: K): boolean;

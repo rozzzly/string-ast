@@ -5,7 +5,7 @@ import { BaseNode } from '../BaseNode';
 import { Range, Location } from '../Range';
 import { TextChunkNode } from '../TextChunkNode';
 import { TextSpanNode, TextSpanNodeKind } from '../TextSpanNode';
-import { MemoizedData, HasMemoizedData, Serializable, HasRaw } from '../miscInterfaces';
+import { MemoizedData, HasMemoizedData, HasRaw } from '../miscInterfaces';
 
 
 export interface TextSpanMemoizedData {
@@ -13,7 +13,7 @@ export interface TextSpanMemoizedData {
     width: number;
 }
 
-export abstract class BaseTextSpanNode<T extends TextSpanNodeKind, D extends TextSpanMemoizedData = TextSpanMemoizedData> extends BaseNode<T> implements HasRaw, Serializable, HasMemoizedData<D> {
+export abstract class BaseTextSpanNode<T extends TextSpanNodeKind, D extends TextSpanMemoizedData = TextSpanMemoizedData> extends BaseNode<T> implements HasRaw, HasMemoizedData<D> {
     public abstract kind: T;
     public abstract raw: string;
     public parent: RootNode;
@@ -111,8 +111,8 @@ export abstract class BaseTextSpanNode<T extends TextSpanNodeKind, D extends Tex
     }
 
     public get width(): number {
-        if (this.isMemoizedDataCurrent('width')) return this.getMemoizedData('width');
-        this.setMemoizedData('width', this.children.reduce((reduction, child) => reduction + child.width, 0));
+        if (!this.isMemoizedDataCurrent('width')) this.updateMemoizedData();
+
         return this.getMemoizedData('width');
     }
 
@@ -134,7 +134,7 @@ export abstract class BaseTextSpanNode<T extends TextSpanNodeKind, D extends Tex
     }
 
     public updateMemoizedData(): void {
-        this.setMemoizedData('width', this.width);
+        this.setMemoizedData('width', this.children.reduce((reduction, child) => reduction + child.width, 0));
         this.setMemoizedData('children', [...this.children]);
     }
 

@@ -2,6 +2,16 @@ import { CharacterNode, CharacterNodeKind } from './CharacterNode';
 import { AnsiEscapeNode, AnsiEscapeNodeKind } from './AnsiEscapeNode';
 import { NewLineEscapeNode, NewLineEscapeNodeKind } from './NewLineEscapeNode';
 
+export type PlainTextChunkNode = (
+    | CharacterNode
+    | NewLineEscapeNode
+);
+
+export type PlainTextChunkNodeKind = (
+    | CharacterNode
+    | NewLineEscapeNode
+);
+
 export type TextChunkNode = (
     | CharacterNode
     | AnsiEscapeNode

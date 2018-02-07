@@ -1,9 +1,9 @@
 import * as util from 'util';
 import { Range } from './Range';
-import { Serializable } from './miscInterfaces';
 import { NodeKind } from '../AST';
+import { PrettyPrint } from './miscInterfaces';
 
-export abstract class BaseNode<T extends NodeKind> implements Serializable {
+export abstract class BaseNode<T extends NodeKind> implements PrettyPrint {
     public abstract kind: T;
     public range: Range;
     public parent: BaseNode<NodeKind>;

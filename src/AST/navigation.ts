@@ -14,7 +14,7 @@ export function hasPreviousNodeOfKind(children: Node[], kind: NodeKind): boolean
     return false;
 }
 
-export function lastNode <K extends Node>(children: Node[]): K {
+export function lastNode<K extends Node>(children: Node[]): K {
     return children.length ? children[children.length - 1] as K : undefined;
 }
 

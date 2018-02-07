@@ -1,10 +1,9 @@
 import { CompoundRange } from '../Range';
 import { TextChunkNodeKind } from '../TextChunkNode';
-import { Serializable } from '../miscInterfaces';
 import { BaseNode } from '../BaseNode';
 import { TextSpanNode } from '../TextSpanNode';
 
-export abstract class BaseTextChunkNode<K extends TextChunkNodeKind> extends BaseNode<K> implements Serializable  {
+export abstract class BaseTextChunkNode<K extends TextChunkNodeKind> extends BaseNode<K> {
     public abstract kind: K;
     public abstract width: number;
     public value: string;

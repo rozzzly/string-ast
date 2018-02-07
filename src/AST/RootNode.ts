@@ -1,5 +1,5 @@
 import { Range } from './Range';
-import { HasRaw, HasNormalized, Serializable } from './miscInterfaces';
+import { HasRaw, HasNormalized, PrettyPrint } from './miscInterfaces';
 import { BaseNode } from './BaseNode';
 import { TextSpanNode } from './TextSpanNode';
 
@@ -7,7 +7,7 @@ import { TextSpanNode } from './TextSpanNode';
 export const RootNodeKind: 'RootNode' = 'RootNode';
 export type RootNodeKind = typeof RootNodeKind;
 
-export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNormalized, Serializable {
+export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNormalized {
     public kind: RootNodeKind = RootNodeKind;
     public raw: string;
     public normalized: string;

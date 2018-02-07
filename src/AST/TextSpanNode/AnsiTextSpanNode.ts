@@ -2,17 +2,24 @@ import { RootNode } from '../RootNode';
 import { AnsiStyle } from '../../Ansi/AnsiStyle';
 import { BaseTextSpanNode, TextSpanMemoizedData } from './BaseTextSpanNode';
 import { AnsiEscapeNode } from '../TextChunkNode/AnsiEscapeNode';
-import { MemoizedData, Serializable } from '../miscInterfaces';
+import { MemoizedData } from '../miscInterfaces';
+import { PlainTextChunkNode } from '../TextChunkNode';
 
 
 export const AnsiTextSpanNodeKind: 'AnsiTextSpanNode' = 'AnsiTextSpanNode';
 export type AnsiTextSpanNodeKind = typeof AnsiTextSpanNodeKind;
 
+export interface RelatedAnsiEscapes {
+    before: AnsiEscapeNode[];
+    after: AnsiEscapeNode[];
+}
 export interface AnsiTextSpanMemoizedData extends TextSpanMemoizedData {
     raw: string;
+    relatedEscapes: RelatedAnsiEscapes;
+    plainTextChildren: PlainTextChunkNode[];
 }
 
-export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind, AnsiTextSpanMemoizedData> implements Serializable {
+export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind, AnsiTextSpanMemoizedData> {
     public kind: AnsiTextSpanNodeKind = AnsiTextSpanNodeKind;
     public style: AnsiStyle;
     public [MemoizedData]: AnsiTextSpanMemoizedData;
@@ -37,31 +44,44 @@ export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind, Ans
     //     return result;
     // }
 
-    public get raw(): string {
-        if (this.isMemoizedDataCurrent('raw')) return this.getMemoizedData('raw');
-        else {
-            this.setMemoizedData('raw', this.children.reduce((reduction, child) => reduction + child.value, ''));
-            return this.getMemoizedData('raw');
-        }
-    }
     public updateMemoizedData(): void {
-        this.setMemoizedData('raw', this.raw);
-        this.updateMemoizedData();
-    }
-
-    public get relatedEscapes(): { before: AnsiEscapeNode[], after: AnsiEscapeNode[] }  {
+        super.updateMemoizedData();
+        let raw: string = '';
+        let plainTextChildren: PlainTextChunkNode[] = [];
         const before: AnsiEscapeNode[] = [];
         const after: AnsiEscapeNode[] = [];
         let textReached: boolean = false;
         this.children.forEach(child => {
+            raw += child.value;
             if (child.kind === 'AnsiEscapeNode') {
-                if (textReached) after.push(child);
-                else before.push(child);
+                if (!textReached) before.push(child);
+                else after.push(child);
             } else {
+                plainTextChildren.push(child);
                 textReached = true;
             }
         });
-        return { before, after };
+        this.setMemoizedData('raw', raw);
+        this.setMemoizedData('relatedEscapes', { before, after });
+        this.setMemoizedData('plainTextChildren', plainTextChildren);
+    }
+
+    public get relatedEscapes(): RelatedAnsiEscapes  {
+        if (!this.isMemoizedDataCurrent('relatedEscapes')) this.updateMemoizedData();
+
+        return this.getMemoizedData('relatedEscapes');
+    }
+
+    public get raw(): string {
+        if (!this.isMemoizedDataCurrent('raw')) this.updateMemoizedData();
+
+        return this.getMemoizedData('raw');
+    }
+
+    public get plainTextChildren(): PlainTextChunkNode[]  {
+        if (!this.isMemoizedDataCurrent('plainTextChildren')) this.updateMemoizedData();
+
+        return this.getMemoizedData('plainTextChildren');
     }
 
     public toJSON(): object {
