@@ -3,13 +3,14 @@ import { CharacterNode } from '../TextChunkNode/CharacterNode';
 import { BaseTextSpanNode } from './BaseTextSpanNode';
 import { NewLineEscapeNode } from '../TextChunkNode/NewLineEscapeNode';
 import { PlainTextChunkNode } from '../TextChunkNode';
+import { Children } from '../navigation';
 
 export const PlainTextSpanNodeKind: 'PlainTextSpanNode' = 'PlainTextSpanNode';
 export type PlainTextSpanNodeKind = typeof PlainTextSpanNodeKind;
 
 export class PlainTextSpanNode extends BaseTextSpanNode<PlainTextSpanNodeKind> {
     public kind: PlainTextSpanNodeKind = PlainTextSpanNodeKind;
-    public children: PlainTextChunkNode[];
+    public children: Children<PlainTextChunkNode>;
     public raw: string;
 
     public constructor(parent: RootNode, text: string) {

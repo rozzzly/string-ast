@@ -2,6 +2,7 @@ import { Range } from './Range';
 import { HasRaw, HasNormalized, PrettyPrint } from './miscInterfaces';
 import { BaseNode } from './BaseNode';
 import { TextSpanNode } from './TextSpanNode';
+import { Children, wrapChildren } from './navigation';
 
 
 export const RootNodeKind: 'RootNode' = 'RootNode';
@@ -11,14 +12,14 @@ export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNorma
     public kind: RootNodeKind = RootNodeKind;
     public raw: string;
     public normalized: string;
-    public children: TextSpanNode[];
+    public children: Children<TextSpanNode>;
     public range: Range;
 
     public constructor(raw: string, normalized: string) {
         super(undefined);
         this.range = undefined;
         this.raw = raw;
-        this.children = [];
+        this.children = wrapChildren([]);
         this.normalized = normalized;
     }
 

@@ -58,6 +58,9 @@ export class AnsiStyle implements AnsiStyleData {
         this.strike = data.strike;
     }
 
+    /**
+     * TODO ::: Memoize this data, create a getter, etc
+     */
     public getEscapeCodes(): AnsiEscapeCodePair {
         const open: number[] = [];
         const close: number[] = [];
@@ -152,6 +155,14 @@ export class AnsiStyle implements AnsiStyleData {
         };
     }
 
+    public get bold(): boolean {
+        return this.weight === 'bold';
+    }
+
+    public get faint(): boolean {
+        return this.weight === 'bold';
+    }
+
     public clone(): AnsiStyle {
         return new AnsiStyle({
             bgColor: this.bgColor.clone(),
@@ -174,6 +185,20 @@ export class AnsiStyle implements AnsiStyleData {
             && this.inverted === other.inverted
             && this.strike === other.strike
         );
+    }
+
+    public toJSON(): object {
+        return {
+            bgColor: this.bgColor.toString(),
+            fgColor: this.fgColor.toString(),
+            bold: this.bold,
+            faint: this.faint,
+            weight: this.weight,
+            underline: this.weight,
+            italic: this.italic,
+            strike: this.strike,
+            escapeCodes: this.getEscapeCodes()
+        }
     }
 }
 

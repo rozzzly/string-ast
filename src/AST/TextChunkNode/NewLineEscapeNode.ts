@@ -8,6 +8,5 @@ export class NewLineEscapeNode extends BaseTextChunkNode<NewLineEscapeNodeKind> 
     public kind: NewLineEscapeNodeKind = NewLineEscapeNodeKind;
     public value: string;
     public width: 0 = 0;
-    public parent: TextSpanNode;
 }
 

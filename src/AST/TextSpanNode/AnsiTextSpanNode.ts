@@ -4,6 +4,7 @@ import { BaseTextSpanNode, TextSpanMemoizedData } from './BaseTextSpanNode';
 import { AnsiEscapeNode } from '../TextChunkNode/AnsiEscapeNode';
 import { MemoizedData } from '../miscInterfaces';
 import { PlainTextChunkNode } from '../TextChunkNode';
+import { Children, wrapChildren } from '../navigation';
 
 
 export const AnsiTextSpanNodeKind: 'AnsiTextSpanNode' = 'AnsiTextSpanNode';
@@ -16,7 +17,7 @@ export interface RelatedAnsiEscapes {
 export interface AnsiTextSpanMemoizedData extends TextSpanMemoizedData {
     raw: string;
     relatedEscapes: RelatedAnsiEscapes;
-    plainTextChildren: PlainTextChunkNode[];
+    plainTextChildren: Children<PlainTextChunkNode>;
 }
 
 export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind, AnsiTextSpanMemoizedData> {
@@ -47,7 +48,7 @@ export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind, Ans
     public updateMemoizedData(): void {
         super.updateMemoizedData();
         let raw: string = '';
-        let plainTextChildren: PlainTextChunkNode[] = [];
+        let plainTextChildren: Children<PlainTextChunkNode> = wrapChildren([]);
         const before: AnsiEscapeNode[] = [];
         const after: AnsiEscapeNode[] = [];
         let textReached: boolean = false;

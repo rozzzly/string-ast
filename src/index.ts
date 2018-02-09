@@ -8,7 +8,7 @@ import { inRange, groupContiguous } from './misc';
 import { parseColorCode } from './Ansi/AnsiColor';
 import { ansiStyleRegex, normalize, ansiStyleParamsRegex } from './Ansi/utils';
 import { AnsiTextSpanNode } from './AST/TextSpanNode/AnsiTextSpanNode';
-import { isLastNodeOfKind, lastNode } from './AST/navigation';
+import { isLastNodeOfKind } from './AST/navigation';
 
 export function parse(str: string): RootNode {
     const normalized = normalize(str);
@@ -70,7 +70,7 @@ export function parse(str: string): RootNode {
                             // append a new `AnsiEscapeNode` because one was not there already
                             root.children.push(new AnsiTextSpanNode(root, '', style));
                         }
-                        const previous: AnsiTextSpanNode = lastNode(root.children);
+                        const previous: AnsiTextSpanNode = root.children.get(-1);
                         // create `AnsiEscapeNodes` and attach them to previous `AnsiTextChunkNode`
                         const escapeNodes: AnsiEscapeNode[] = escapes.map(escapeParams => (
                             new AnsiEscapeNode(previous, escapeParams)
@@ -84,10 +84,10 @@ export function parse(str: string): RootNode {
                 } else {
                     // there are unhandled escapes, but is part has the "base" style. Let's just attach these escapes to the previous `AnsiTextChunkNode`
                     if (style.equalTo(baseStyle) && isLastNodeOfKind(root.children, 'AnsiTextSpanNode')) {
-                        const previous: AnsiTextSpanNode = lastNode(root.children);
+                        const previous: AnsiTextSpanNode = root.children.get(-1);
                         // create `AnsiEscapeNodes` and attach them to previous `AnsiTextChunkNode`
                         const escapeNodes: AnsiEscapeNode[] = escapes.map(params => (
-                            new AnsiEscapeNode(previous as AnsiTextSpanNode, params)
+                            new AnsiEscapeNode(previous, params)
                         ));
                         previous.children.push(...escapeNodes);
                         root.children.push(new PlainTextSpanNode(root, part));

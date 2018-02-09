@@ -6,10 +6,11 @@ import { Range, Location } from '../Range';
 import { TextChunkNode } from '../TextChunkNode';
 import { TextSpanNode, TextSpanNodeKind } from '../TextSpanNode';
 import { MemoizedData, HasMemoizedData, HasRaw } from '../miscInterfaces';
+import { Children, wrapChildren } from '../navigation';
 
 
 export interface TextSpanMemoizedData {
-    children: TextChunkNode[];
+    children: Children<TextChunkNode>;
     width: number;
 }
 
@@ -17,7 +18,7 @@ export abstract class BaseTextSpanNode<T extends TextSpanNodeKind, D extends Tex
     public abstract kind: T;
     public abstract raw: string;
     public parent: RootNode;
-    public children: TextChunkNode[];
+    public children: Children<TextChunkNode>;
     public text: string;
 
     public [MemoizedData]: D;
@@ -28,7 +29,7 @@ export abstract class BaseTextSpanNode<T extends TextSpanNodeKind, D extends Tex
         super(parent);
         this.text = text;
         // this.raw = raw;
-        this.children = splitText(text, this as TextSpanNode);
+        this.children = wrapChildren(splitText(text, this as TextSpanNode));
         this[MemoizedData] = {
             children: undefined,
             range: undefined,
@@ -135,7 +136,7 @@ export abstract class BaseTextSpanNode<T extends TextSpanNodeKind, D extends Tex
 
     public updateMemoizedData(): void {
         this.setMemoizedData('width', this.children.reduce((reduction, child) => reduction + child.width, 0));
-        this.setMemoizedData('children', [...this.children]);
+        this.setMemoizedData('children', wrapChildren([...this.children]));
     }
 
     public toJSON(): object {

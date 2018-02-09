@@ -29,8 +29,10 @@ export type AnsiColor = (
 export abstract class AnsiColorBase {
     public abstract mode: AnsiColorMode;
     public abstract value: RGB | number;
-
     public abstract clone(): AnsiColor;
+
+    /** Make it look like an instance of the imaginary class `AnsiColor` */
+    public get name(): string { return 'AnsiColor'; }
 
     public equalTo(other: AnsiColor): boolean {
         if (this.mode === '24-bit' || other.mode === '24-bit') {
@@ -56,6 +58,7 @@ export abstract class AnsiColorBase {
      * ANSI 3bit color codes are included in the 8bit range but need to be shifted around
      * @see https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
      * @param value 3bit value to convert to an 8bit color value
+     * @returns {number} the 8bit value
      */
     private convert3BitTo8Bit(value: number): number {
         if (inRange(30, value, 37)) return value - 30;
@@ -67,8 +70,11 @@ export abstract class AnsiColorBase {
 }
 
 export class AnsiColor_3Bit extends AnsiColorBase {
-    public mode: AnsiColorMode_3Bit;
+    public mode: AnsiColorMode_3Bit = AnsiColorMode_3Bit;
     public value: number;
+
+    /** Make it look like an instance of the imaginary class `AnsiColor` */
+    public get name(): string { return 'AnsiColor'; }
 
     public constructor(value: number) {
         super();
@@ -81,8 +87,11 @@ export class AnsiColor_3Bit extends AnsiColorBase {
 }
 
 export class AnsiColor_8Bit extends AnsiColorBase {
-    public mode: AnsiColorMode_8Bit;
+    public mode: AnsiColorMode_8Bit = AnsiColorMode_8Bit;
     public value: number;
+
+    /** Make it look like an instance of the imaginary class `AnsiColor` */
+    public get name(): string { return 'AnsiColor'; }
 
     public constructor(value: number) {
         super();
@@ -95,8 +104,11 @@ export class AnsiColor_8Bit extends AnsiColorBase {
 }
 
 export class AnsiColor_24Bit extends AnsiColorBase {
-    public mode: AnsiColorMode_24Bit;
+    public mode: AnsiColorMode_24Bit = AnsiColorMode_24Bit;
     public value: RGB;
+
+    /** Make it look like an instance of the imaginary class `AnsiColor` */
+    public get name(): string { return 'AnsiColor'; }
 
     public constructor(value: RGB) {
         super();
