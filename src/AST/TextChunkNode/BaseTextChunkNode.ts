@@ -12,7 +12,8 @@ export abstract class BaseTextChunkNode<K extends TextChunkNodeKind> extends Bas
     public parent: TextSpanNode;
 
     public constructor(parent: TextSpanNode, value: string) {
-        super(parent);
+        super();
+        this.parent = parent;
         this.value = value;
         this.bytes = value.length;
     }

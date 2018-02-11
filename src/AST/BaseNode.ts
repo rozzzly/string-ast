@@ -1,20 +1,14 @@
-import * as util from 'util';
 import { Range } from './Range';
-import { NodeKind } from '../AST';
-import { PrettyPrint } from './miscInterfaces';
+import { NodeKind, Node } from '../AST';
+import { PrettyPrint, HasChildren } from './miscInterfaces';
+import { Children, wrapChildren } from './navigation';
+import * as _  from 'lodash';
+import { Memorizer } from './Memorizer';
 
-export abstract class BaseNode<T extends NodeKind> implements PrettyPrint {
-    public abstract kind: T;
+
+export abstract class BaseNode<K extends NodeKind> implements PrettyPrint {
+    public abstract kind: K;
     public range: Range;
-    public parent: BaseNode<NodeKind>;
-
-    public constructor(parent: BaseNode<NodeKind>) {
-        this.parent = parent;
-    }
-
-    public [util.inspect.custom](): string {
-        return util.inspect(this.toJSON(), { colors: true, maxArrayLength: 256, depth: 8, customInspect: true });
-    }
 
     public toJSON(): object {
         return {
@@ -24,3 +18,15 @@ export abstract class BaseNode<T extends NodeKind> implements PrettyPrint {
     }
 }
 
+export abstract class ComputedNode<K extends NodeKind, D extends {}> extends BaseNode<K> {
+    protected memoized: Memorizer<D>;
+
+    public constructor() {
+        super();
+        this.memoized = new Memorizer();
+    }
+
+    public invalidate() {
+        this.memoized.invalidate();
+    }
+}

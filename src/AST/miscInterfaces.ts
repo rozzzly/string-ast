@@ -1,4 +1,6 @@
 import { BaseNode } from './BaseNode';
+import { Children } from './navigation';
+import { Node } from '../AST';
 
 export interface PrettyPrint {
     toJSON(): object;
@@ -14,21 +16,18 @@ export interface HasNormalized {
     normalized: string;
 }
 
-export const MemoizedData: unique symbol = Symbol('[string-ast]::Node(HasMemoizedData).MemoizedData');
-export type MemoizedData = typeof MemoizedData;
+export const IsInvalidated: unique symbol = Symbol('[string-ast]::Node(Invalidatable)');
+export type IsInvalidated = typeof IsInvalidated;
 
-export interface HasMemoizedData<D extends {}> {
-    // TODO force implementors to have public getters with the same name
-    // Will require index intersection hack..
-    // ex: [K in keyof D]: D[K]
-    [MemoizedData]: D;
-    isMemoizedDataCurrent(): boolean;
-    isMemoizedDataCurrent<K extends keyof D = keyof D>(key: K): boolean;
-    getMemoizedData<K extends keyof D = keyof D>(key: K): D[K];
-    setMemoizedData<K extends keyof D = keyof D>(key: K, value: D[K]): void;
-    updateMemoizedData(): void;
-}
+export type Invalidatable<T> = (
+    | T
+    | IsInvalidated
+);
 
 export interface Derived<T extends BaseNode<any>> {
     derivedFrom?: T;
+}
+
+export interface HasChildren<T extends Node> {
+    children: Children<T>;
 }

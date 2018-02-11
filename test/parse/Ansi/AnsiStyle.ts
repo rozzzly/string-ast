@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import test from 'ava';
+
 import { parse } from '../../../src';
 import { AnsiTextSpanNode } from '../../../src/AST/TextSpanNode/AnsiTextSpanNode';
 import { AnsiStyle } from '../../../src/Ansi/AnsiStyle';

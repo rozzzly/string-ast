@@ -1,3 +1,5 @@
+import * as util from 'util';
+
 import { Range } from './Range';
 import { HasRaw, HasNormalized, PrettyPrint } from './miscInterfaces';
 import { BaseNode } from './BaseNode';
@@ -16,11 +18,15 @@ export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNorma
     public range: Range;
 
     public constructor(raw: string, normalized: string) {
-        super(undefined);
+        super();
         this.range = undefined;
         this.raw = raw;
         this.children = wrapChildren([]);
         this.normalized = normalized;
+    }
+
+    public [util.inspect.custom](): string {
+        return util.inspect(this.toJSON(), { colors: true, maxArrayLength: 256, depth: 8, customInspect: true });
     }
 
     public splitMultiLine(): this {
@@ -50,7 +56,7 @@ export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNorma
         return {
             ...super.toJSON(),
             raw: this.raw,
-            children: this.children,
+            children: this.children.map(child => child.toJSON()),
             normalized: this.normalized
         };
     }

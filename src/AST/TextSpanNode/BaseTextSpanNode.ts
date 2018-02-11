@@ -1,54 +1,34 @@
 import * as _ from 'lodash';
 import { splitText } from '../../splits';
 import { RootNode } from '../RootNode';
-import { BaseNode } from '../BaseNode';
+import { BaseNode, ComputedNode } from '../BaseNode';
 import { Range, Location } from '../Range';
 import { TextChunkNode } from '../TextChunkNode';
 import { TextSpanNode, TextSpanNodeKind } from '../TextSpanNode';
-import { MemoizedData, HasMemoizedData, HasRaw } from '../miscInterfaces';
+import { IsInvalidated, HasRaw } from '../miscInterfaces';
 import { Children, wrapChildren } from '../navigation';
 
 
 export interface TextSpanMemoizedData {
-    children: Children<TextChunkNode>;
     width: number;
 }
-
-export abstract class BaseTextSpanNode<T extends TextSpanNodeKind, D extends TextSpanMemoizedData = TextSpanMemoizedData> extends BaseNode<T> implements HasRaw, HasMemoizedData<D> {
+export abstract class BaseTextSpanNode<T extends TextSpanNodeKind, D extends TextSpanMemoizedData = TextSpanMemoizedData> extends ComputedNode<T, D> implements HasRaw {
     public abstract kind: T;
     public abstract raw: string;
     public parent: RootNode;
     public children: Children<TextChunkNode>;
     public text: string;
 
-    public [MemoizedData]: D;
-
     public constructor(parent: RootNode, text: string);
     public constructor(parent: RootNode, text: string);
     public constructor(parent: RootNode, text: string) {
-        super(parent);
+        super();
+        this.memoized.computers.width = () => this.children.reduce((reduction, child) => reduction + child.width, 0);
+        this.parent = parent;
         this.text = text;
         // this.raw = raw;
         this.children = wrapChildren(splitText(text, this as TextSpanNode));
-        this[MemoizedData] = {
-            children: undefined,
-            range: undefined,
-            width: undefined
-        } as any;
     }
-
-    // public get lines(): CharacterNode[][] {
-    //     const result: CharacterNode[][] = [];
-    //     for(let i = 0, l = 0; i < this.children.length; i++) {
-    //         const current = this.children[i];
-    //         if (current.type === 'NewLineNode') {
-    //             l++;
-    //         } else {
-    //             result[l].push(current);
-    //         }
-    //     }
-    //     return result;
-    // }
 
     public calculateRange(parentOffset: Location) {
         this.range = {
@@ -112,31 +92,7 @@ export abstract class BaseTextSpanNode<T extends TextSpanNodeKind, D extends Tex
     }
 
     public get width(): number {
-        if (!this.isMemoizedDataCurrent('width')) this.updateMemoizedData();
-
-        return this.getMemoizedData('width');
-    }
-
-    public isMemoizedDataCurrent(): boolean;
-    public isMemoizedDataCurrent<K extends keyof D = keyof D>(key?: K): boolean;
-    public isMemoizedDataCurrent<K extends keyof D = keyof D>(key: K = undefined): boolean {
-        if (this[MemoizedData].children === this.children || _.isEqual(this[MemoizedData].children, this.children)) {
-            if (key && this[MemoizedData][key] !== undefined) return true;
-            else return false;
-        } else return false;
-    }
-
-    public setMemoizedData<K extends keyof D = keyof D>(key: K, value: D[K]): void {
-        this[MemoizedData][key] = value;
-    }
-
-    public getMemoizedData<K extends keyof D = keyof D>(key: K): D[K] {
-        return this[MemoizedData][key];
-    }
-
-    public updateMemoizedData(): void {
-        this.setMemoizedData('width', this.children.reduce((reduction, child) => reduction + child.width, 0));
-        this.setMemoizedData('children', wrapChildren([...this.children]));
+        return this.memoized.getMemoizedData('width');
     }
 
     public toJSON(): object {
@@ -145,7 +101,7 @@ export abstract class BaseTextSpanNode<T extends TextSpanNodeKind, D extends Tex
             raw: this.raw,
             text: this.text,
             width: this.width,
-            children: this.children,
+            children: this.children.map(child => child.toJSON()),
         };
     }
 }
