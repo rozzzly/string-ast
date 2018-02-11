@@ -31,9 +31,6 @@ export abstract class AnsiColorBase {
     public abstract value: RGB | number;
     public abstract clone(): AnsiColor;
 
-    /** Make it look like an instance of the imaginary class `AnsiColor` */
-    public get name(): string { return 'AnsiColor'; }
-
     public equalTo(other: AnsiColor): boolean {
         if (this.mode === '24-bit' || other.mode === '24-bit') {
             if (this.mode === '24-bit' && other.mode === '24-bit') {
@@ -73,9 +70,6 @@ export class AnsiColor_3Bit extends AnsiColorBase {
     public mode: AnsiColorMode_3Bit = AnsiColorMode_3Bit;
     public value: number;
 
-    /** Make it look like an instance of the imaginary class `AnsiColor` */
-    public get name(): string { return 'AnsiColor'; }
-
     public constructor(value: number) {
         super();
         this.value = value;
@@ -90,9 +84,6 @@ export class AnsiColor_8Bit extends AnsiColorBase {
     public mode: AnsiColorMode_8Bit = AnsiColorMode_8Bit;
     public value: number;
 
-    /** Make it look like an instance of the imaginary class `AnsiColor` */
-    public get name(): string { return 'AnsiColor'; }
-
     public constructor(value: number) {
         super();
         this.value = value;
@@ -106,9 +97,6 @@ export class AnsiColor_8Bit extends AnsiColorBase {
 export class AnsiColor_24Bit extends AnsiColorBase {
     public mode: AnsiColorMode_24Bit = AnsiColorMode_24Bit;
     public value: RGB;
-
-    /** Make it look like an instance of the imaginary class `AnsiColor` */
-    public get name(): string { return 'AnsiColor'; }
 
     public constructor(value: RGB) {
         super();
