@@ -101,6 +101,7 @@ export function parse(str: string): RootNode {
                         node.children.unshift(...escapeNodes);
                         root.children.push(node);
                         escapes = [];
+                        style = style.clone(); // prevent mutation
                     }
                 }
             }

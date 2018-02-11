@@ -13,6 +13,6 @@ test('correctly parsing styles of a chalk-wrapped string', t => {
     const node: AnsiTextSpanNode = ast.children.get(0);
     const style: AnsiStyle = node.style;
     t.truthy(style);
-    t.is(style.fgColor, Colors.fg.RED);
+    t.true(style.fgColor.equalTo(Colors.fg.RED));
     t.is(style.weight, 'bold');
 });

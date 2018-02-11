@@ -7,7 +7,6 @@ test('AnsiTextSpanNode surrounded by PlainTextSpanNode', t => {
     const str: string = `PlainText ${chalk.red.bold('AnsiText')} PlainText`;
     const ast = parse(str);
 
-    console.log(ast);
     t.is(ast.kind, 'RootNode');
     t.is(ast.children.length, 3);
     t.is(ast.children[0].kind, 'PlainTextSpanNode');
@@ -19,7 +18,6 @@ test('PlainTextSpanNode before an AnsiTextSpanNode', t => {
     const str: string = `PlainText ${chalk.red('AnsiText')}`;
     const ast = parse(str);
 
-    console.log(ast);
     t.is(ast.kind, 'RootNode');
     t.is(ast.children.length, 2);
     t.is(ast.children[0].kind, 'PlainTextSpanNode');
@@ -40,9 +38,9 @@ test('AnsiTextSpanNode before a PlainTextSpanNode', t => {
 test('Just PlainText', t => {
     const str: string = 'Just some PlainText';
     const ast = parse(str);
-    console.log(ast);
+
     t.is(ast.kind, 'RootNode');
     t.is(ast.children[0].kind, 'PlainTextSpanNode');
     t.is(ast.children[0].raw, str);
     t.is(ast.children[0].children[0].value, 'J');
-})
+});
