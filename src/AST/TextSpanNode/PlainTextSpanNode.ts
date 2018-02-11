@@ -3,7 +3,7 @@ import { CharacterNode } from '../TextChunkNode/CharacterNode';
 import { BaseTextSpanNode } from './BaseTextSpanNode';
 import { NewLineEscapeNode } from '../TextChunkNode/NewLineEscapeNode';
 import { PlainTextChunkNode } from '../TextChunkNode';
-import { Children } from '../navigation';
+import { Children, wrapChildren } from '../navigation';
 
 export const PlainTextSpanNodeKind: 'PlainTextSpanNode' = 'PlainTextSpanNode';
 export type PlainTextSpanNodeKind = typeof PlainTextSpanNodeKind;

@@ -32,7 +32,7 @@ export class Memorizer<D extends {}>  {
         if (this.invalidated === true) return true;
         else {
             if (key) {
-                return this.invalidated[key];
+                return this.invalidated[key] !== false;
             } else {
                 return Object.keys(this.invalidated).some((prop: keyof D) => (this.invalidated as any)[prop] === true);
             }

@@ -36,3 +36,13 @@ test('AnsiTextSpanNode before a PlainTextSpanNode', t => {
     t.is(ast.children[0].kind, 'AnsiTextSpanNode');
     t.is(ast.children[1].kind, 'PlainTextSpanNode');
 });
+
+test('Just PlainText', t => {
+    const str: string = 'Just some PlainText';
+    const ast = parse(str);
+    console.log(ast);
+    t.is(ast.kind, 'RootNode');
+    t.is(ast.children[0].kind, 'PlainTextSpanNode');
+    t.is(ast.children[0].raw, str);
+    t.is(ast.children[0].children[0].value, 'J');
+})

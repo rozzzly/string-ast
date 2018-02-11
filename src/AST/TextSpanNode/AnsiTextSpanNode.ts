@@ -69,8 +69,11 @@ export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind, Ans
         return {
             ...super.toJSON(),
             style: this.style,
-            plainTextChildren: this.plainTextChildren,
-            relatedEscapes: this.relatedEscapes,
+            plainTextChildren: this.plainTextChildren.map(child => child.toJSON()),
+            relatedEscapes: {
+                after: this.relatedEscapes.after.map(esc => esc.toJSON()),
+                before:  this.relatedEscapes.before.map(esc => esc.toJSON()),
+            },
         };
     }
 }

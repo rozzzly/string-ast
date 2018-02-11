@@ -5,8 +5,10 @@ export interface Children<U> extends Array<U> {
     get<T extends U = U>(index: number): T;
 }
 
-export function wrapChildren<U>(children: U[]): Children<U> {
-    const result: Children<U> = [] as any;
+export function wrapChildren<U>(): Children<U>;
+export function wrapChildren<U>(children: U[]): Children<U>;
+export function wrapChildren<U>(children: U[] = []): Children<U> {
+    const result: Children<U> = children as any;
 
     Object.defineProperty(result, 'get', {
         enumerable: false,

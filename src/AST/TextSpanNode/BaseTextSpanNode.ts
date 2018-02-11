@@ -23,11 +23,11 @@ export abstract class BaseTextSpanNode<T extends TextSpanNodeKind, D extends Tex
     public constructor(parent: RootNode, text: string);
     public constructor(parent: RootNode, text: string) {
         super();
+        this.children = wrapChildren(splitText(text, this as any));
         this.memoized.computers.width = () => this.children.reduce((reduction, child) => reduction + child.width, 0);
         this.parent = parent;
         this.text = text;
         // this.raw = raw;
-        this.children = wrapChildren(splitText(text, this as TextSpanNode));
     }
 
     public calculateRange(parentOffset: Location) {
