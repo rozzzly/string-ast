@@ -15,4 +15,5 @@ test('correctly parsing styles of a chalk-wrapped string', t => {
     t.truthy(style);
     t.true(style.fgColor.equalTo(Colors.fg.RED));
     t.is(style.weight, 'bold');
+    t.true(style.bold);
 });
