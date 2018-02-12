@@ -2,32 +2,39 @@ import * as _ from 'lodash';
 import { splitText } from '../../splits';
 import { RootNode } from '../RootNode';
 import { BaseNode, ComputedNode } from '../BaseNode';
-import { Range, Location, CompoundLocation, CompoundRange, LocationData } from '../Range';
+import { Range, CompoundRange } from '../Range';
 import { TextChunkNode } from '../TextChunkNode';
 import { TextSpanNode, TextSpanNodeKind } from '../TextSpanNode';
-import { IsInvalidated, HasRaw, SerializeStrategy } from '../miscInterfaces';
+import { IsInvalidated, HasRaw, SerializeStrategy, defaultSerializeStrategy, minVerbosity } from '../miscInterfaces';
 import { Children, wrapChildren } from '../navigation';
+import { LocationData, Location, CompoundLocation } from '../Location';
+import { Memorizer } from '../Memorizer';
 
 
 export interface TextSpanMemoizedData {
     width: number;
 }
-export abstract class BaseTextSpanNode<T extends TextSpanNodeKind, D extends TextSpanMemoizedData = TextSpanMemoizedData> extends ComputedNode<T, D> implements HasRaw {
+
+const computers = {
+    width: <T extends TextSpanNodeKind>(self: BaseTextSpanNode<T>) => self.children.reduce((reduction, child) => reduction + child.width, 0)
+};
+
+export abstract class BaseTextSpanNode<T extends TextSpanNodeKind> extends ComputedNode<T> implements HasRaw {
     public abstract kind: T;
     public abstract raw: string;
+    public text: string;
     public parent: RootNode;
     public children: Children<TextChunkNode>;
-    public text: string;
+    protected memoized: Memorizer<TextSpanMemoizedData, this>;
 
     public constructor(parent: RootNode, text: string);
     public constructor(parent: RootNode, text: string);
     public constructor(parent: RootNode, text: string) {
         super();
         this.children = wrapChildren(splitText(text, this as any));
-        this.memoized.computers.width = () => this.children.reduce((reduction, child) => reduction + child.width, 0);
+        this.memoized.computers = { ...this.memoized.computers, ...computers };
         this.parent = parent;
         this.text = text;
-        // this.raw = raw;
     }
 
     public calculateRange(parentOffset: LocationData) {
@@ -96,15 +103,21 @@ export abstract class BaseTextSpanNode<T extends TextSpanNodeKind, D extends Tex
     }
 
     public toJSON(): object;
-    public toJSON(strategy: SerializeStrategy): object;
-    public toJSON(strategy: SerializeStrategy = 'Data_Extended'): object {
-        return {
-            ...super.toJSON(strategy),
-            raw: this.raw,
-            text: this.text,
-            width: this.width,
+    public toJSON(strategy: Partial<SerializeStrategy>): object;
+    public toJSON(strategy: Partial<SerializeStrategy> = {}): object {
+        const strat = { ...defaultSerializeStrategy, ...strategy };
+        const obj: any = {
+            ...super.toJSON(strat),
             children: this.children.map(child => child.toJSON(strategy)),
         };
+        if (minVerbosity(strat.verbosity, 'extended')) {
+            obj.text = this.text,
+            obj.width = this.width;
+            if (strat.verbosity === 'full') {
+                obj.raw = this.raw;
+            }
+        }
+        return obj;
     }
 }
 

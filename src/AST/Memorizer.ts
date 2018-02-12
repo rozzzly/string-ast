@@ -6,15 +6,21 @@ export type InvalidationMap<D extends object> = (
     }
 );
 
-export type ComputerMap<D extends {}> = {
-    [K in keyof D]?: () => D[K];
+export type ComputerMap<D extends {}, S extends object> = {
+    [K in keyof D]?: (self: S) => D[K];
 };
 
-export class Memorizer<D extends {}>  {
+export class Memorizer<D extends {}, S extends object>  {
 
     public data: D = { } as D;
-    public computers: ComputerMap<D> = {};
+    public computers: ComputerMap<D, S> = {};
     public invalidated: InvalidationMap<D> = true;
+    private self: S;
+
+    public constructor(selfRef: S) {
+        this.self = selfRef;
+    }
+
 
     public invalidate(): void;
     public invalidate(key: keyof D): void;
@@ -58,7 +64,7 @@ export class Memorizer<D extends {}>  {
         if (!this.computers[key]) {
             throw new ReferenceError(`No computer for '${key}'.`);
         } else {
-            this.setMemoizedData(key, this.computers[key]());
+            this.setMemoizedData(key, this.computers[key](this.self));
         }
     }
 }

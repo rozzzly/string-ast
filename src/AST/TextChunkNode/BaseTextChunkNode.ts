@@ -2,7 +2,7 @@ import { CompoundRange } from '../Range';
 import { TextChunkNodeKind } from '../TextChunkNode';
 import { BaseNode } from '../BaseNode';
 import { TextSpanNode } from '../TextSpanNode';
-import { SerializeStrategy } from '../miscInterfaces';
+import { SerializeStrategy, defaultSerializeStrategy } from '../miscInterfaces';
 
 export abstract class BaseTextChunkNode<K extends TextChunkNodeKind> extends BaseNode<K> {
     public abstract kind: K;
@@ -20,10 +20,11 @@ export abstract class BaseTextChunkNode<K extends TextChunkNodeKind> extends Bas
     }
 
     public toJSON(): object;
-    public toJSON(strategy: SerializeStrategy): object;
-    public toJSON(strategy: SerializeStrategy = 'Data_Extended'): object {
+    public toJSON(strategy: Partial<SerializeStrategy>): object;
+    public toJSON(strategy: Partial<SerializeStrategy> = {}): object {
+        const strat = { ...defaultSerializeStrategy, ...strategy };
         return {
-            ...super.toJSON(strategy),
+            ...super.toJSON(strat),
             bytes: this.bytes,
             width: this.width,
             value: this.value

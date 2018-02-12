@@ -1,6 +1,6 @@
 import { BaseTextChunkNode } from './BaseTextChunkNode';
 import { AnsiTextSpanNode } from '../TextSpanNode/AnsiTextSpanNode';
-import { SerializeStrategy } from '../miscInterfaces';
+import { SerializeStrategy, defaultSerializeStrategy, minVerbosity } from '../miscInterfaces';
 
 export const AnsiEscapeNodeKind: 'AnsiEscapeNode' = 'AnsiEscapeNode';
 export type AnsiEscapeNodeKind = typeof AnsiEscapeNodeKind;
@@ -17,16 +17,19 @@ export class AnsiEscapeNode extends BaseTextChunkNode<AnsiEscapeNodeKind> {
     }
 
     public toJSON(): object;
-    public toJSON(strategy: SerializeStrategy): object;
-    public toJSON(strategy: SerializeStrategy = 'Data_Extended'): object {
+    public toJSON(strategy: Partial<SerializeStrategy>): object;
+    public toJSON(strategy: Partial<SerializeStrategy> = {}): object {
+        const strat = { ...defaultSerializeStrategy, ...strategy };
         const result: any =  {
-            ...super.toJSON(strategy),
+            ...super.toJSON(strat),
         };
 
-        if (strategy === 'Data_Extended') {
-            result.params = this.params;
-        } else if (strategy === 'Display_Extended') {
-            result.params = this.params.join(' ');
+        if (strat.verbosity === 'full') {
+            if (strat.mode === 'display') {
+                result.params = this.params.join(' ');
+            } else {
+                result.params = this.params;
+            }
         }
 
         return result;

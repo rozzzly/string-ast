@@ -30,3 +30,22 @@ export function groupContiguous<C, P extends C>(group: C[], predicate: Contiguou
 
     return result;
 }
+
+export function atLeast<T>(levels: T[]): (value: T, minimum: T) => boolean {
+    return (value: T, minimum: T): boolean => {
+        const valIndex: number = levels.indexOf(value);
+        const minIndex: number = levels.indexOf(minimum);
+        if (valIndex === -1 || minIndex === -1) throw new TypeError('Unexpected Level');
+        else return (valIndex >= minIndex);
+    };
+}
+
+
+export function atMost<T>(levels: T[]): (value: T, minimum: T) => boolean {
+    return (value: T, minimum: T): boolean => {
+        const valIndex: number = levels.indexOf(value);
+        const minIndex: number = levels.indexOf(minimum);
+        if (valIndex === -1 || minIndex === -1) throw new TypeError('Unexpected Level');
+        else return (valIndex <= minIndex);
+    };
+}

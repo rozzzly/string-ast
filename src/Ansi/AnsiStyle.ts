@@ -2,6 +2,8 @@ import * as _ from 'lodash';
 
 import { AnsiColor, Colors } from './AnsiColor';
 import * as codes from './AnsiCodes';
+import { SerializeStrategy, defaultSerializeStrategy } from '../AST/miscInterfaces';
+import { Memorizer } from '../AST/Memorizer';
 
 export type AnsiTextWeight = (
     | 'bold'
@@ -36,39 +38,19 @@ export interface AnsiEscapeCodePair {
 }
 
 
-export class AnsiStyle implements AnsiStyleData {
-    public bgColor: AnsiColor;
-    public fgColor: AnsiColor;
-    public weight: AnsiTextWeight;
-    public inverted: boolean;
-    public underline: boolean;
-    public italic: boolean;
-    public strike: boolean;
+export interface AnsiStyleMemoizedData {
+   escapeCodes: AnsiEscapeCodePair;
+}
 
-    public constructor();
-    public constructor(style: Partial<AnsiStyleData>);
-    public constructor(style: Partial<AnsiStyleData> = {}) {
-        const data = _.defaults({}, style, baseStyleData);
-        this.bgColor = data.bgColor;
-        this.fgColor = data.fgColor;
-        this.weight = data.weight;
-        this.inverted = data.inverted;
-        this.underline = data.underline;
-        this.italic = data.italic;
-        this.strike = data.strike;
-    }
-
-    /**
-     * TODO ::: Memoize this data, create a getter, etc
-     */
-    public getEscapeCodes(): AnsiEscapeCodePair {
+const computers = {
+    escapeCodes: (self: AnsiStyle): AnsiEscapeCodePair => {
         const open: number[] = [];
         const close: number[] = [];
 
-        if (this.weight !== baseStyle.weight) {
-            if (this.weight === 'normal') open.push(codes.WEIGHT_NORMAL);
-            else if (this.weight === 'bold') open.push(codes.WEIGHT_BOLD);
-            else if (this.weight === 'faint') open.push(codes.WEIGHT_NORMAL);
+        if (self.weight !== baseStyle.weight) {
+            if (self.weight === 'normal') open.push(codes.WEIGHT_NORMAL);
+            else if (self.weight === 'bold') open.push(codes.WEIGHT_BOLD);
+            else if (self.weight === 'faint') open.push(codes.WEIGHT_NORMAL);
             else throw new TypeError();
 
             if (baseStyle.weight === 'normal') close.push(codes.WEIGHT_NORMAL);
@@ -76,8 +58,8 @@ export class AnsiStyle implements AnsiStyleData {
             else if (baseStyle.weight === 'faint') close.push(codes.WEIGHT_FAINT);
             else throw new TypeError();
         }
-        if (this.italic !== baseStyle.italic) {
-            if (this.italic) {
+        if (self.italic !== baseStyle.italic) {
+            if (self.italic) {
                 open.push(codes.ITALIC_ON);
                 close.push(codes.ITALIC_OFF);
             } else {
@@ -85,8 +67,8 @@ export class AnsiStyle implements AnsiStyleData {
                 close.push(codes.ITALIC_ON);
             }
         }
-        if (this.underline !== baseStyle.underline) {
-            if (this.underline) {
+        if (self.underline !== baseStyle.underline) {
+            if (self.underline) {
                 open.push(codes.UNDERLINED_ON);
                 close.push(codes.UNDERLINED_OFF);
             } else {
@@ -94,8 +76,8 @@ export class AnsiStyle implements AnsiStyleData {
                 close.push(codes.UNDERLINED_ON);
             }
         }
-        if (this.strike !== baseStyle.strike) {
-            if (this.strike) {
+        if (self.strike !== baseStyle.strike) {
+            if (self.strike) {
                 open.push(codes.STRIKED_ON);
                 close.push(codes.STRIKED_OFF);
             } else {
@@ -103,8 +85,8 @@ export class AnsiStyle implements AnsiStyleData {
                 close.push(codes.STRIKED_ON);
             }
         }
-        if (this.inverted !== baseStyle.inverted) {
-            if (this.inverted) {
+        if (self.inverted !== baseStyle.inverted) {
+            if (self.inverted) {
                 open.push(codes.INVERTED_ON);
                 close.push(codes.INVERTED_OFF);
             } else {
@@ -113,12 +95,12 @@ export class AnsiStyle implements AnsiStyleData {
             }
         }
 
-        if (!this.fgColor.equalTo(baseStyle.fgColor)) {
-            if (this.fgColor.mode === '3-bit') open.push(this.fgColor.value);
-            else if (this.fgColor.mode === '8-bit') {
-                open.push(codes.FG_CUSTOM, codes.COLOR_MODE_8BIT, this.fgColor.value);
-            } else if (this.fgColor.mode === '24-bit') {
-                const { r, g, b } = this.fgColor.value;
+        if (!self.fgColor.equalTo(baseStyle.fgColor)) {
+            if (self.fgColor.mode === '3-bit') open.push(self.fgColor.value);
+            else if (self.fgColor.mode === '8-bit') {
+                open.push(codes.FG_CUSTOM, codes.COLOR_MODE_8BIT, self.fgColor.value);
+            } else if (self.fgColor.mode === '24-bit') {
+                const { r, g, b } = self.fgColor.value;
                 open.push(codes.FG_CUSTOM, codes.COLOR_MODE_24BIT, r, g, b);
             }
 
@@ -131,12 +113,12 @@ export class AnsiStyle implements AnsiStyleData {
             }
         }
 
-        if (!this.bgColor.equalTo(baseStyle.bgColor)) {
-            if (this.bgColor.mode === '3-bit') open.push(this.bgColor.value);
-            else if (this.bgColor.mode === '8-bit') {
-                open.push(codes.BG_CUSTOM, codes.COLOR_MODE_8BIT, this.bgColor.value);
-            } else if (this.bgColor.mode === '24-bit') {
-                const { r, g, b } = this.bgColor.value;
+        if (!self.bgColor.equalTo(baseStyle.bgColor)) {
+            if (self.bgColor.mode === '3-bit') open.push(self.bgColor.value);
+            else if (self.bgColor.mode === '8-bit') {
+                open.push(codes.BG_CUSTOM, codes.COLOR_MODE_8BIT, self.bgColor.value);
+            } else if (self.bgColor.mode === '24-bit') {
+                const { r, g, b } = self.bgColor.value;
                 open.push(codes.BG_CUSTOM, codes.COLOR_MODE_24BIT, r, g, b);
             }
 
@@ -153,6 +135,37 @@ export class AnsiStyle implements AnsiStyleData {
             open: open.length ? `\u00b1[${open.join(';')}m` : '',
             close: close.length ? `\u00b1[${close.join(';')}m` : ''
         };
+    }
+}
+
+export class AnsiStyle implements AnsiStyleData{
+
+    public bgColor: AnsiColor;
+    public fgColor: AnsiColor;
+    public weight: AnsiTextWeight;
+    public inverted: boolean;
+    public underline: boolean;
+    public italic: boolean;
+    public strike: boolean;
+
+    private memoized: Memorizer<AnsiStyleMemoizedData, AnsiStyle>;
+
+    public constructor();
+    public constructor(style: Partial<AnsiStyleData>);
+    public constructor(style: Partial<AnsiStyleData> = {}) {
+        const data = { ...baseStyleData, ...style };
+        this.bgColor = data.bgColor;
+        this.fgColor = data.fgColor;
+        this.weight = data.weight;
+        this.inverted = data.inverted;
+        this.underline = data.underline;
+        this.italic = data.italic;
+        this.strike = data.strike;
+        this.memoized = new Memorizer(this);
+    }
+
+    public get escapeCodes(): AnsiEscapeCodePair {
+        return this.memoized.getMemoizedData('escapeCodes');
     }
 
     public get bold(): boolean {
@@ -187,18 +200,30 @@ export class AnsiStyle implements AnsiStyleData {
         );
     }
 
-    public toJSON(): object {
-        return {
+    public toJSON(): object;
+    public toJSON(strategy: Partial<SerializeStrategy>): object;
+    public toJSON(strategy: Partial<SerializeStrategy> = {}): object {
+        const strat = { ...defaultSerializeStrategy, ...strategy };
+        const obj: any = {
             bgColor: this.bgColor.toString(),
             fgColor: this.fgColor.toString(),
-            bold: this.bold,
-            faint: this.faint,
             weight: this.weight,
             underline: this.weight,
             italic: this.italic,
-            strike: this.strike,
-            escapeCodes: this.getEscapeCodes()
+            strike: this.strike
+        };
+
+        if (strat.verbosity === 'full') {
+            obj.bold = this.bold;
+            obj.faint = this.faint;
+            const esc = this.escapeCodes;
+            obj.escapeCodes = strat.mode === 'display' ? { open: esc.open, close: esc.close } : esc;
         }
+        return obj;
+    }
+
+    public invalidate(): void {
+        this.memoized.invalidate();
     }
 }
 

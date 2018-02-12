@@ -2,9 +2,10 @@ import { RootNode } from '../RootNode';
 import { AnsiStyle } from '../../Ansi/AnsiStyle';
 import { BaseTextSpanNode, TextSpanMemoizedData } from './BaseTextSpanNode';
 import { AnsiEscapeNode } from '../TextChunkNode/AnsiEscapeNode';
-import { IsInvalidated, SerializeStrategy } from '../miscInterfaces';
+import { IsInvalidated, SerializeStrategy, defaultSerializeStrategy, minVerbosity } from '../miscInterfaces';
 import { PlainTextChunkNode } from '../TextChunkNode';
 import { Children, wrapChildren } from '../navigation';
+import { Memorizer } from '../Memorizer';
 
 
 export const AnsiTextSpanNodeKind: 'AnsiTextSpanNode' = 'AnsiTextSpanNode';
@@ -20,37 +21,42 @@ export interface AnsiTextSpanMemoizedData extends TextSpanMemoizedData {
     plainTextChildren: Children<PlainTextChunkNode>;
 }
 
-export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind, AnsiTextSpanMemoizedData> {
+const computers = {
+    raw: (self: AnsiTextSpanNode) => self.children.reduce((reduction, child) => reduction + child.value, ''),
+    plainTextChildren: (self: AnsiTextSpanNode) => {
+        const plainTextChildren: Children<PlainTextChunkNode> = wrapChildren([]);
+        self.children.forEach(child => {
+            if (child.kind !== 'AnsiEscapeNode') {
+                plainTextChildren.push(child);
+            }
+        });
+        return plainTextChildren;
+    },
+    relatedEscapes: (self: AnsiTextSpanNode) => {
+        const before: AnsiEscapeNode[] = [];
+        const after: AnsiEscapeNode[] = [];
+        let textReached: boolean = false;
+        self.children.forEach(child => {
+            if (child.kind === 'AnsiEscapeNode') {
+                if (!textReached) before.push(child);
+                else after.push(child);
+            } else {
+                textReached = true;
+            }
+        });
+        return { before, after };
+    }
+};
+
+export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind> {
     public kind: AnsiTextSpanNodeKind = AnsiTextSpanNodeKind;
     public style: AnsiStyle;
+    protected memoized: Memorizer<AnsiTextSpanMemoizedData, this>;
 
     public constructor(parent: RootNode, text: string, style: AnsiStyle) {
         super(parent, text);
         this.style = style;
-        this.memoized.computers.raw = () => this.children.reduce((reduction, child) => reduction + child.value, '');
-        this.memoized.computers.plainTextChildren = () => {
-            const plainTextChildren: Children<PlainTextChunkNode> = wrapChildren([]);
-            this.children.forEach(child => {
-                if (child.kind !== 'AnsiEscapeNode') {
-                    plainTextChildren.push(child);
-                }
-            });
-            return plainTextChildren;
-        };
-        this.memoized.computers.relatedEscapes = () => {
-            const before: AnsiEscapeNode[] = [];
-            const after: AnsiEscapeNode[] = [];
-            let textReached: boolean = false;
-            this.children.forEach(child => {
-                if (child.kind === 'AnsiEscapeNode') {
-                    if (!textReached) before.push(child);
-                    else after.push(child);
-                } else {
-                    textReached = true;
-                }
-            });
-            return { before, after };
-        };
+        this.memoized.computers = { ...this.memoized.computers, ...computers };
     }
 
     public get relatedEscapes(): RelatedAnsiEscapes  {
@@ -66,27 +72,22 @@ export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind, Ans
     }
 
     public toJSON(): object;
-    public toJSON(strategy: SerializeStrategy): object;
-    public toJSON(strategy: SerializeStrategy = 'Data_Extended'): object {
-        const extended = (strategy === 'Display_Extended' || strategy === 'Data_Extended');
-        const display = (strategy === 'Display' || strategy === 'Display_Extended');
-        const result: any = {
-            ...super.toJSON(strategy),
+    public toJSON(strategy: Partial<SerializeStrategy>): object;
+    public toJSON(strategy: Partial<SerializeStrategy> = {}): object {
+        const strat = { ...defaultSerializeStrategy, ...strategy };
+        const obj: any = {
+            ...super.toJSON(strat),
             style: this.style
         };
 
-        if (display || extended) {
-            if (display && !extended) {
-                result.plainTextChildren = ' [...] ';
-                result.relatedEscapes = ' [...] ';
-            } else if (extended) {
-                result.plainTextChildren = this.plainTextChildren.map(child => child.toJSON(strategy)),
-                result.relatedEscapes = {
-                    after: this.relatedEscapes.after.map(esc => esc.toJSON(strategy)),
-                    before:  this.relatedEscapes.before.map(esc => esc.toJSON(strategy)),
-                };
-            }
+        if (strat.verbosity === 'full') {
+            obj.plainTextChildren = this.plainTextChildren.map(child => child.toJSON(strat));
+            const relatedEscapes = this.relatedEscapes;
+            obj.relatedEscapes = {
+                after: relatedEscapes.after.map(esc => esc.toJSON(strat)),
+                before: relatedEscapes.before.map(esc => esc.toJSON(strat)),
+            };
         }
-        return result;
+        return obj;
     }
 }

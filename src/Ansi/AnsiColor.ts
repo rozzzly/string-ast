@@ -1,5 +1,6 @@
 import { inRange } from '../misc';
 import { FG_CUSTOM, BG_CUSTOM, COLOR_MODE_8BIT, COLOR_MODE_24BIT } from './AnsiCodes';
+import { Serializable, SerializeStrategy, defaultSerializeStrategy } from '../AST/miscInterfaces';
 
 export interface RGB {
     r: number;
@@ -26,7 +27,7 @@ export type AnsiColor = (
     | AnsiColor_24Bit
 );
 
-export abstract class AnsiColorBase {
+export abstract class AnsiColorBase implements Serializable {
     public abstract mode: AnsiColorMode;
     public abstract value: RGB | number;
     public abstract clone(): AnsiColor;
@@ -48,6 +49,32 @@ export abstract class AnsiColorBase {
             if (other.mode === '3-bit') bVal = this.convert3BitTo8Bit(other.value as number);
 
             return (aVal === bVal);
+        }
+    }
+
+    public toJSON(): object;
+    public toJSON(strategy: Partial<SerializeStrategy>): object;
+    public toJSON(strategy: Partial<SerializeStrategy> = {}): object {
+        const strat = { ...defaultSerializeStrategy, ...strategy};
+        const obj: any = {
+            mode: this.mode,
+            value: this.value
+        };
+        return obj;
+    }
+
+    public toString(): string {
+        if (this.mode === '24-bit') {
+            const v: RGB = this.value as RGB;
+            return `rgb(${v.r}, ${v.g}, ${v.b})`;
+        } else {
+            const v: number = this.value as number;
+            if (this.mode === '3-bit') {
+                return nameIndex['3-bit'][v];
+            } else {
+                const name = nameIndex['8-bit'][v];
+                return name ? name : `${v} (8-bit)`;
+            }
         }
     }
 
@@ -105,6 +132,7 @@ export class AnsiColor_24Bit extends AnsiColorBase {
     public clone(): AnsiColor_24Bit {
         return new AnsiColor_24Bit(this.value);
     }
+
 }
 
 
@@ -141,7 +169,6 @@ export function parseColorCode(param: number, params: number[], paramsSafe: numb
     }
 }
 
-
 export interface AnsiColorPalette {
     BLACK: AnsiColor;
     RED: AnsiColor;
@@ -163,6 +190,40 @@ const paletteFromOffset = (offset: number): AnsiColorPalette => ({
     CYAN: new AnsiColor_3Bit(36 + offset),
     WHITE: new AnsiColor_3Bit(37 + offset)
 });
+
+const nameIndexBase = {
+    0: 'black',
+    1: 'red',
+    2: 'green',
+    3: 'yellow',
+    4: 'blue',
+    5: 'magenta',
+    6: 'cyan',
+    7: 'white',
+};
+
+const nameIndex = {
+    '3-bit': {
+        ...Object.keys(nameIndexBase).reduce<{[K: number]: string}>((
+            (reduction, name, code) => ({
+                 ...reduction,
+                  [code + 30]: name,
+                  [code + 40]: name,
+                  [code + 60]: `bright${name[0].toUpperCase()}${name.substr(1)}`,
+                  [code + 70]: `bright${name[0].toUpperCase()}${name.substr(1)}`
+            })
+        ), {})
+    },
+    '8-bit': {
+        ...Object.keys(nameIndexBase).reduce<{[K: number]: string}>((
+            (reduction, name, code) => ({
+                 ...reduction,
+                  [code]: name,
+                  [code + 8]: `bright${name[0].toUpperCase()}${name.substr(1)}`
+            })
+        ), {})
+    }
+};
 
 export const Colors: {
     fg: (

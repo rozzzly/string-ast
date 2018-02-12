@@ -1,11 +1,12 @@
 import * as util from 'util';
 import { stringify } from 'purdy';
 
-import { Range, Location } from './Range';
-import { HasRaw, HasNormalized, Serializable, SerializeStrategy } from './miscInterfaces';
+import { Range } from './Range';
+import { HasRaw, HasNormalized, Serializable, SerializeStrategy, defaultSerializeStrategy } from './miscInterfaces';
 import { BaseNode } from './BaseNode';
 import { TextSpanNode } from './TextSpanNode';
 import { Children, wrapChildren } from './navigation';
+import { Location } from './Location';
 
 
 export const RootNodeKind: 'RootNode' = 'RootNode';
@@ -27,7 +28,7 @@ export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNorma
     }
 
     public [util.inspect.custom](): string {
-        const obj = this.toJSON('Display_Extended');
+        const obj = this.toJSON({ mode: 'display', verbosity: 'extended' });
         return stringify(obj, { plain: false, indent: 2, depth: 8 });
     }
 
@@ -59,12 +60,13 @@ export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNorma
     }
 
     public toJSON(): object;
-    public toJSON(strategy: SerializeStrategy): object;
-    public toJSON(strategy: SerializeStrategy = 'Display_Extended'): object {
+    public toJSON(strategy: Partial<SerializeStrategy>): object;
+    public toJSON(strategy: Partial<SerializeStrategy> = {}): object {
+        const strat = { ...defaultSerializeStrategy, ...strategy };
         return {
             ...super.toJSON(strategy),
             raw: this.raw,
-            children: this.children.map(child => child.toJSON(strategy)),
+            children: this.children.map(child => child.toJSON(strat)),
             normalized: this.normalized
         };
     }
