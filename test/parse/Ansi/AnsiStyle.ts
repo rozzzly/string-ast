@@ -6,7 +6,7 @@ import { AnsiTextSpanNode } from '../../../src/AST/TextSpanNode/AnsiTextSpanNode
 import { AnsiStyle } from '../../../src/Ansi/AnsiStyle';
 import { Colors } from '../../../src/Ansi/AnsiColor';
 
-test('correctly parsing styles of a chalk-wrapped string', t => {
+test('chalk-wrapped string', t => {
     const str: string = chalk.red.bold('some text');
     const ast = parse(str);
 
@@ -16,4 +16,16 @@ test('correctly parsing styles of a chalk-wrapped string', t => {
     t.true(style.fgColor.equalTo(Colors.fg.RED));
     t.is(style.weight, 'bold');
     t.true(style.bold);
+});
+
+test('multiple AnsiTextSpans in a string', t => {
+    const str: string = `This is ${chalk.red('red')} and this is ${chalk.greenBright('bright green')}!`;
+    const ast = parse(str);
+
+    console.log(ast);
+
+    const red: AnsiTextSpanNode = ast.children.get(1);
+    const green: AnsiTextSpanNode = ast.children.get(3);
+    t.true(red.style.fgColor.equalTo(Colors.fg.RED));
+    t.true(green.style.fgColor.equalTo(Colors.fg.bright.GREEN));
 });

@@ -2,7 +2,7 @@ import { RootNode } from '../RootNode';
 import { AnsiStyle } from '../../Ansi/AnsiStyle';
 import { BaseTextSpanNode, TextSpanMemoizedData } from './BaseTextSpanNode';
 import { AnsiEscapeNode } from '../TextChunkNode/AnsiEscapeNode';
-import { IsInvalidated } from '../miscInterfaces';
+import { IsInvalidated, SerializeStrategy } from '../miscInterfaces';
 import { PlainTextChunkNode } from '../TextChunkNode';
 import { Children, wrapChildren } from '../navigation';
 
@@ -65,15 +65,28 @@ export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind, Ans
         return this.memoized.getMemoizedData('plainTextChildren');
     }
 
-    public toJSON(): object {
-        return {
-            ...super.toJSON(),
-            style: this.style,
-            plainTextChildren: this.plainTextChildren.map(child => child.toJSON()),
-            relatedEscapes: {
-                after: this.relatedEscapes.after.map(esc => esc.toJSON()),
-                before:  this.relatedEscapes.before.map(esc => esc.toJSON()),
-            },
+    public toJSON(): object;
+    public toJSON(strategy: SerializeStrategy): object;
+    public toJSON(strategy: SerializeStrategy = 'Data_Extended'): object {
+        const extended = (strategy === 'Display_Extended' || strategy === 'Data_Extended');
+        const display = (strategy === 'Display' || strategy === 'Display_Extended');
+        const result: any = {
+            ...super.toJSON(strategy),
+            style: this.style
         };
+
+        if (display || extended) {
+            if (display && !extended) {
+                result.plainTextChildren = ' [...] ';
+                result.relatedEscapes = ' [...] ';
+            } else if (extended) {
+                result.plainTextChildren = this.plainTextChildren.map(child => child.toJSON(strategy)),
+                result.relatedEscapes = {
+                    after: this.relatedEscapes.after.map(esc => esc.toJSON(strategy)),
+                    before:  this.relatedEscapes.before.map(esc => esc.toJSON(strategy)),
+                };
+            }
+        }
+        return result;
     }
 }

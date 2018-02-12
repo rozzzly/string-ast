@@ -2,6 +2,7 @@ import { CompoundRange } from '../Range';
 import { TextChunkNodeKind } from '../TextChunkNode';
 import { BaseNode } from '../BaseNode';
 import { TextSpanNode } from '../TextSpanNode';
+import { SerializeStrategy } from '../miscInterfaces';
 
 export abstract class BaseTextChunkNode<K extends TextChunkNodeKind> extends BaseNode<K> {
     public abstract kind: K;
@@ -18,9 +19,11 @@ export abstract class BaseTextChunkNode<K extends TextChunkNodeKind> extends Bas
         this.bytes = value.length;
     }
 
-    public toJSON(): object {
+    public toJSON(): object;
+    public toJSON(strategy: SerializeStrategy): object;
+    public toJSON(strategy: SerializeStrategy = 'Data_Extended'): object {
         return {
-            ...super.toJSON(),
+            ...super.toJSON(strategy),
             bytes: this.bytes,
             width: this.width,
             value: this.value

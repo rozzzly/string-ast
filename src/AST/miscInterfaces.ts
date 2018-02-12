@@ -2,10 +2,16 @@ import { BaseNode } from './BaseNode';
 import { Children } from './navigation';
 import { Node } from '../AST';
 
-export interface PrettyPrint {
+export type SerializeStrategy = (
+    | 'Data'
+    | 'Data_Extended'
+    | 'Display'
+    | 'Display_Extended'
+);
+
+export interface Serializable {
     toJSON(): object;
-    toJSON(key: string): object;
-    toJSON(key?: string): object;
+    toJSON(strategy: SerializeStrategy): object;
 }
 
 export interface HasRaw {

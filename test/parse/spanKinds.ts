@@ -42,6 +42,7 @@ test('Just PlainText', t => {
     const ast = parse(str);
 
     t.is(ast.kind, 'RootNode');
+    t.is(ast.children.length, 1);
     t.is(ast.children[0].kind, 'PlainTextSpanNode');
     t.is(ast.children[0].raw, str);
     t.is(ast.children[0].children[0].value, 'J');

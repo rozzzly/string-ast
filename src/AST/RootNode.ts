@@ -1,7 +1,8 @@
 import * as util from 'util';
+import { stringify } from 'purdy';
 
-import { Range } from './Range';
-import { HasRaw, HasNormalized, PrettyPrint } from './miscInterfaces';
+import { Range, Location } from './Range';
+import { HasRaw, HasNormalized, Serializable, SerializeStrategy } from './miscInterfaces';
 import { BaseNode } from './BaseNode';
 import { TextSpanNode } from './TextSpanNode';
 import { Children, wrapChildren } from './navigation';
@@ -26,7 +27,8 @@ export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNorma
     }
 
     public [util.inspect.custom](): string {
-        return util.inspect(this.toJSON(), { colors: true, maxArrayLength: 256, depth: 8, customInspect: true });
+        const obj = this.toJSON('Display_Extended');
+        return stringify(obj, { plain: false, indent: 2, depth: 8 });
     }
 
     public splitMultiLine(): this {
@@ -37,26 +39,32 @@ export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNorma
         let line: number = 0;
         let column: number = 0;
         let offset: number = 0;
-        let textOffset: number = 0;
-        this.range = {
-            start: { line, column, offset, textOffset },
-            stop: undefined
-        };
+        let plainTextOffset: number = 0;
+        this.range = new Range(
+            new Location({ line, column, offset, plainTextOffset }),
+            undefined
+        );
         this.children.forEach(child => {
-            child.calculateRange({ line, column, offset, textOffset });
+            child.calculateRange({ line, column, offset, plainTextOffset });
             line = child.range.stop.line;
             column = child.range.stop.column;
             offset = child.range.stop.offset;
-            textOffset = child.range.stop.textOffset;
+            plainTextOffset = child.range.stop.plainTextOffset;
         });
-        this.range.stop = { line, column, offset, textOffset };
+        this.range.stop = new Location({ line, column, offset, plainTextOffset });
     }
 
-    public toJSON(): object {
+    public toString(): string {
+        return (this as any)[util.inspect.custom]();
+    }
+
+    public toJSON(): object;
+    public toJSON(strategy: SerializeStrategy): object;
+    public toJSON(strategy: SerializeStrategy = 'Display_Extended'): object {
         return {
-            ...super.toJSON(),
+            ...super.toJSON(strategy),
             raw: this.raw,
-            children: this.children.map(child => child.toJSON()),
+            children: this.children.map(child => child.toJSON(strategy)),
             normalized: this.normalized
         };
     }

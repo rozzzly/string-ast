@@ -12,9 +12,9 @@ export type ComputerMap<D extends {}> = {
 
 export class Memorizer<D extends {}>  {
 
-    public invalidated: InvalidationMap<D> = true;
     public data: D = { } as D;
     public computers: ComputerMap<D> = {};
+    public invalidated: InvalidationMap<D> = true;
 
     public invalidate(): void;
     public invalidate(key: keyof D): void;
@@ -43,7 +43,7 @@ export class Memorizer<D extends {}>  {
         this.data[key] = value;
         // "un-invalidate" the key which was computed
         if (this.invalidated === true) {
-            this.invalidated = { [key]: false } as any;
+            this.invalidated = { [key]: false } as { [T in keyof D]: boolean };
         } else {
             this.invalidated[key] = false;
         }
