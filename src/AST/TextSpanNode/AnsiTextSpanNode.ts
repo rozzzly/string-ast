@@ -5,7 +5,7 @@ import { AnsiEscapeNode } from '../TextChunkNode/AnsiEscapeNode';
 import { IsInvalidated, SerializeStrategy, defaultSerializeStrategy, minVerbosity } from '../miscInterfaces';
 import { PlainTextChunkNode } from '../TextChunkNode';
 import { Children, wrapChildren } from '../navigation';
-import { Memorizer } from '../Memorizer';
+import { Memoizer, memoizeClass } from '../Memoizer';
 
 
 export const AnsiTextSpanNodeKind: 'AnsiTextSpanNode' = 'AnsiTextSpanNode';
@@ -48,15 +48,15 @@ const computers = {
     }
 };
 
+@memoizeClass(computers)
 export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind> {
     public kind: AnsiTextSpanNodeKind = AnsiTextSpanNodeKind;
     public style: AnsiStyle;
-    protected memoized: Memorizer<AnsiTextSpanMemoizedData, this>;
+    protected memoized: Memoizer<AnsiTextSpanMemoizedData, this>;
 
     public constructor(parent: RootNode, text: string, style: AnsiStyle) {
         super(parent, text);
         this.style = style;
-        this.memoized.computers = { ...this.memoized.computers, ...computers };
     }
 
     public get relatedEscapes(): RelatedAnsiEscapes  {

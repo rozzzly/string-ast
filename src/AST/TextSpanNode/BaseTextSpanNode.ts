@@ -8,7 +8,7 @@ import { TextSpanNode, TextSpanNodeKind } from '../TextSpanNode';
 import { IsInvalidated, HasRaw, SerializeStrategy, defaultSerializeStrategy, minVerbosity } from '../miscInterfaces';
 import { Children, wrapChildren } from '../navigation';
 import { LocationData, Location, CompoundLocation } from '../Location';
-import { Memorizer } from '../Memoizer';
+import { Memoizer, memoizeClass } from '../Memoizer';
 
 
 export interface TextSpanMemoizedData {
@@ -18,21 +18,20 @@ export interface TextSpanMemoizedData {
 const computers = {
     width: <T extends TextSpanNodeKind>(self: BaseTextSpanNode<T>) => self.children.reduce((reduction, child) => reduction + child.width, 0)
 };
-
+@memoizeClass(computers)
 export abstract class BaseTextSpanNode<T extends TextSpanNodeKind> extends ComputedNode<T> implements HasRaw {
     public abstract kind: T;
     public abstract raw: string;
     public text: string;
     public parent: RootNode;
     public children: Children<TextChunkNode>;
-    protected memoized: Memorizer<TextSpanMemoizedData, this>;
+    protected memoized: Memoizer<TextSpanMemoizedData, this>;
 
     public constructor(parent: RootNode, text: string);
     public constructor(parent: RootNode, text: string);
     public constructor(parent: RootNode, text: string) {
         super();
         this.children = wrapChildren(splitText(text, this as any));
-        this.memoized.computers = { ...this.memoized.computers, ...computers };
         this.parent = parent;
         this.text = text;
     }
