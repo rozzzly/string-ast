@@ -3,7 +3,7 @@ import { NodeKind, Node } from '../AST';
 import { Serializable, HasChildren, SerializeStrategy, defaultSerializeStrategy } from './miscInterfaces';
 import { Children, wrapChildren } from './navigation';
 import * as _  from 'lodash';
-import { Memorizer } from './Memorizer';
+import { Memorizer } from './Memoizer';
 
 
 export abstract class BaseNode<K extends NodeKind> implements Serializable {
@@ -26,7 +26,7 @@ export abstract class ComputedNode<K extends NodeKind> extends BaseNode<K> {
 
     public constructor() {
         super();
-        this.memoized = new Memorizer();
+        this.memoized = new Memorizer(this);
     }
 
     public invalidate(): void {

@@ -8,7 +8,7 @@ import { TextSpanNode, TextSpanNodeKind } from '../TextSpanNode';
 import { IsInvalidated, HasRaw, SerializeStrategy, defaultSerializeStrategy, minVerbosity } from '../miscInterfaces';
 import { Children, wrapChildren } from '../navigation';
 import { LocationData, Location, CompoundLocation } from '../Location';
-import { Memorizer } from '../Memorizer';
+import { Memorizer } from '../Memoizer';
 
 
 export interface TextSpanMemoizedData {
