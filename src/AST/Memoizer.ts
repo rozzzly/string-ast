@@ -9,30 +9,30 @@ export type ComputerMap<D extends {}, S extends object> = {
     [K in keyof D]?: (self: S) => D[K];
 };
 
-export function memoizeClass(computers: {}):  any {
-    console.log(computers);
-    return <T extends { new(...args: any[]): {} }>(base: T): T => {
-        return class extends base {
-            constructor(...args: any[]) {
-                super(...args);
-                (this as any).memoizer = (this as any).memoizer || new Memoizer<any, any>(this);
-                (this as any).memoizer.computers = { ...(this as any).memoizer.computers, ...computers };
-            }
-        };
-    } ;
-}
-
 export class Memoizer<D extends {}, S extends object>  {
 
-    public data: D = { } as D;
-    public computers: ComputerMap<D, S> = {};
+    public data: D;
+    public computers: ComputerMap<D, S>;
     public invalidated: InvalidationMap<D> = true;
     private self: S;
 
-    public constructor(selfRef: S) {
+    public constructor(selfRef: S);
+    public constructor(selfRef: S, computers: ComputerMap<D, S>);
+    public constructor(selfRef: S, computers: ComputerMap<D, S> = {}) {
         this.self = selfRef;
+        this.computers = computers;
+        this.data = {} as D;
     }
 
+    public patch<K extends keyof D>(computers: ComputerMap<D, S>): void;
+    public patch<K extends keyof D>(key: K, computer: (self: S) => D[K]): void;
+    public patch(...args: any[]): void {
+        if (args.length === 2) {
+            (this.computers as any)[args[0]] = args[1];
+        } else if (args.length === 1) {
+            this.computers = { ...this.computers as any, ...args[0] };
+        } else throw new TypeError();
+    }
 
     public invalidate(): void;
     public invalidate(key: keyof D): void;

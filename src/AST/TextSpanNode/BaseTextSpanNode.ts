@@ -8,7 +8,7 @@ import { TextSpanNode, TextSpanNodeKind } from '../TextSpanNode';
 import { IsInvalidated, HasRaw, SerializeStrategy, defaultSerializeStrategy, minVerbosity } from '../miscInterfaces';
 import { Children, wrapChildren } from '../navigation';
 import { LocationData, Location, CompoundLocation } from '../Location';
-import { Memoizer, memoizeClass } from '../Memoizer';
+import { Memoizer } from '../Memoizer';
 
 
 export interface TextSpanMemoizedData {
@@ -18,7 +18,7 @@ export interface TextSpanMemoizedData {
 const computers = {
     width: <T extends TextSpanNodeKind>(self: BaseTextSpanNode<T>) => self.children.reduce((reduction, child) => reduction + child.width, 0)
 };
-@memoizeClass(computers)
+
 export abstract class BaseTextSpanNode<T extends TextSpanNodeKind> extends ComputedNode<T> implements HasRaw {
     public abstract kind: T;
     public abstract raw: string;
@@ -34,6 +34,7 @@ export abstract class BaseTextSpanNode<T extends TextSpanNodeKind> extends Compu
         this.children = wrapChildren(splitText(text, this as any));
         this.parent = parent;
         this.text = text;
+        this.memoized.patch(computers);
     }
 
     public calculateRange(parentOffset: LocationData) {

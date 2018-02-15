@@ -3,7 +3,7 @@ import * as _ from 'lodash';
 import { AnsiColor, Colors } from './AnsiColor';
 import * as codes from './AnsiCodes';
 import { SerializeStrategy, defaultSerializeStrategy } from '../AST/miscInterfaces';
-import { Memoizer, memoizeClass } from '../AST/Memoizer';
+import { Memoizer } from '../AST/Memoizer';
 
 export type AnsiTextWeight = (
     | 'bold'
@@ -136,10 +136,9 @@ const computers = {
             close: close.length ? `\u00b1[${close.join(';')}m` : ''
         };
     }
-}
+};
 
-@memoizeClass(computers)
-export class AnsiStyle implements AnsiStyleData{
+export class AnsiStyle implements AnsiStyleData {
 
     public bgColor: AnsiColor;
     public fgColor: AnsiColor;
@@ -152,6 +151,7 @@ export class AnsiStyle implements AnsiStyleData{
     private memoized: Memoizer<AnsiStyleMemoizedData, AnsiStyle>;
 
     public constructor();
+    public constructor(style: AnsiStyleData);
     public constructor(style: Partial<AnsiStyleData>);
     public constructor(style: Partial<AnsiStyleData> = {}) {
         const data = { ...baseStyleData, ...style };
@@ -162,7 +162,7 @@ export class AnsiStyle implements AnsiStyleData{
         this.underline = data.underline;
         this.italic = data.italic;
         this.strike = data.strike;
-        this.memoized = new Memoizer(this);
+        this.memoized = new Memoizer(this, computers);
     }
 
     public get escapeCodes(): AnsiEscapeCodePair {
