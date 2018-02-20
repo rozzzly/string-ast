@@ -33,29 +33,13 @@ export abstract class AnsiColorBase implements Serializable {
     public abstract clone(): AnsiColor;
 
     public equalTo(other: AnsiColor): boolean {
-        if (this.mode === '24-bit' || other.mode === '24-bit') {
-            if (this.mode === '24-bit' && other.mode === '24-bit') {
-                return (
-                    (this as AnsiColor_24Bit).value.r === (other as AnsiColor_24Bit).value.r
-                    && (this as AnsiColor_24Bit).value.g === (other as AnsiColor_24Bit).value.g
-                    && (this as AnsiColor_24Bit).value.b === (other as AnsiColor_24Bit).value.b
-                );
-            } else return false;
-        } else {
-            let aVal: number = this.value as number;
-            let bVal: number = other.value as number;
-
-            if (this.mode === '3-bit') aVal = this.convert3BitTo8Bit(this.value as number);
-            if (other.mode === '3-bit') bVal = this.convert3BitTo8Bit(other.value as number);
-
-            return (aVal === bVal);
-        }
+       return (this.toString() === other.toString());
     }
 
     public toJSON(): object;
     public toJSON(strategy: Partial<SerializeStrategy>): object;
     public toJSON(strategy: Partial<SerializeStrategy> = {}): object {
-        const strat = { ...defaultSerializeStrategy, ...strategy};
+        const strat = { ...defaultSerializeStrategy, ...strategy };
         const obj: any = {
             mode: this.mode,
             value: this.value
@@ -76,20 +60,6 @@ export abstract class AnsiColorBase implements Serializable {
                 return (typeof name === 'string') ? name : `rgb(${name.r}, ${name.g}, ${name.b})`;
             }
         }
-    }
-
-    /**
-     * ANSI 3bit color codes are included in the 8bit range but need to be shifted around
-     * @see https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
-     * @param value 3bit value to convert to an 8bit color value
-     * @returns {number} the 8bit value
-     */
-    private convert3BitTo8Bit(value: number): number {
-        if (inRange(codes.FG_START, value, (codes.FG_CUSTOM - 1))) return value - codes.FG_START;
-        else if (inRange(codes.BG_START, value, (codes.BG_CUSTOM - 1))) return value - codes.BG_START;
-        else if (inRange(codes.FG_BRIGHT_START, value, (codes.FG_BRIGHT_END - 1))) return value - (codes.FG_BRIGHT_START + 2);
-        else if (inRange(codes.BG_BRIGHT_START, value, (codes.BG_BRIGHT_END - 1))) return value - (codes.BG_BRIGHT_START + 2);
-        else return value;
     }
 }
 
@@ -191,16 +161,16 @@ const paletteFromOffset = (offset: number): AnsiColorPalette => ({
     WHITE: new AnsiColor_3Bit(7 + offset)
 });
 
-const nameIndexBase = {
-    0: 'black',
-    1: 'red',
-    2: 'green',
-    3: 'yellow',
-    4: 'blue',
-    5: 'magenta',
-    6: 'cyan',
-    7: 'white',
-};
+const nameIndexBase = [
+    'black',
+    'red',
+    'green',
+    'yellow',
+    'blue',
+    'magenta',
+    'cyan',
+    'white'
+];
 
 
 export const Colors: {
@@ -253,8 +223,8 @@ export const Colors: {
 
 const nameIndex: any = {
     '3-bit': {
-        ...Object.entries(nameIndexBase).reduce<{}>((
-            (reduction, [code, name]) => ({
+        ...nameIndexBase.reduce<{}>((
+            (reduction, name, code) => ({
                  ...reduction,
                   [code + codes.FG_START]: name,
                   [code + codes.BG_START]: name,
@@ -264,7 +234,8 @@ const nameIndex: any = {
         ), {
             [codes.FG_DEFAULT]: 'normal',
             [codes.BG_DEFAULT]: 'normal'
-        })
+        }),
+        // 92: 'brightGreen'
     },
     '8-bit': {
         16: { r: 0, g: 0, b: 0 },
@@ -507,8 +478,8 @@ const nameIndex: any = {
         253: { r: 218, g: 218, b: 218 },
         254: { r: 228, g: 228, b: 228 },
         255: { r: 238, g: 238, b: 238 },
-        ...Object.entries(nameIndexBase).reduce<{}>((
-            (reduction, [code, name]) => ({
+        ...nameIndexBase.reduce<{}>((
+            (reduction, name, code) => ({
                 ...reduction,
                 [code]: name,
                 [code + 8]: `bright${name[0].toUpperCase()}${name.substr(1)}`

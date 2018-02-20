@@ -41,9 +41,9 @@ export const STRIKED_ON: 9 = 9;
 export const STRIKED_OFF: 29 = 29;
 
 /** Sets the foreground of the text to be the default color */
-export const FG_DEFAULT: 37 = 37;
+export const FG_DEFAULT: 39 = 39;
 /** Sets the background of the text to be the default color (none) */
-export const BG_DEFAULT: 47 = 47;
+export const BG_DEFAULT: 49 = 49;
 /** Signals following parameters will specify a custom foreground text color */
 export const FG_CUSTOM: 38 = 38;
 /** Signals following parameters will specify a custom background color */

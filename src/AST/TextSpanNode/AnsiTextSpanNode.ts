@@ -77,7 +77,7 @@ export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind> {
         const strat = { ...defaultSerializeStrategy, ...strategy };
         const obj: any = {
             ...super.toJSON(strat),
-            style: this.style
+            style: this.style.toJSON(strat)
         };
 
         if (strat.verbosity === 'full') {

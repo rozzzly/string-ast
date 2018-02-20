@@ -29,9 +29,9 @@ export function parse(str: string): RootNode {
                 escapes.push(safeParams);
                 while (params.length) {
                     let current: number = params.pop();
-                    if (inRange(codes.FG_START, codes.FG_END, current) || inRange(codes.FG_BRIGHT_START, codes.FG_BRIGHT_END, current)) {
+                    if (inRange(codes.FG_START, codes.FG_DEFAULT, current) || inRange(codes.FG_BRIGHT_START, codes.FG_BRIGHT_END, current)) {
                         style.fgColor = parseColorCode(current, params, safeParams);
-                    } else if (inRange(codes.BG_START, codes.BG_END, current) || inRange(codes.BG_BRIGHT_START, codes.BG_BRIGHT_END, current)) {
+                    } else if (inRange(codes.BG_START, codes.BG_DEFAULT, current) || inRange(codes.BG_BRIGHT_START, codes.BG_BRIGHT_END, current)) {
                         style.bgColor = parseColorCode(current, params, safeParams);
                     } else if (current === codes.WEIGHT_BOLD) {
                         style.weight = 'bold';
@@ -92,6 +92,7 @@ export function parse(str: string): RootNode {
                         previous.children.push(...escapeNodes);
                         root.children.push(new PlainTextSpanNode(root, part));
                         escapes = [];
+                        style = style.clone();
                     } else {
                         const node: AnsiTextSpanNode = new AnsiTextSpanNode(root, part, style);
                         const escapeNodes: AnsiEscapeNode[] = escapes.map(params => (

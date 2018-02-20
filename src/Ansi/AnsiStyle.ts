@@ -209,7 +209,7 @@ export class AnsiStyle implements AnsiStyleData {
             bgColor: this.bgColor.toString(),
             fgColor: this.fgColor.toString(),
             weight: this.weight,
-            underline: this.weight,
+            underline: this.underline,
             italic: this.italic,
             strike: this.strike
         };
