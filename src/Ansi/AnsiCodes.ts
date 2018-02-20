@@ -40,6 +40,10 @@ export const STRIKED_ON: 9 = 9;
 /** Sets the text to NOT be striked-out */
 export const STRIKED_OFF: 29 = 29;
 
+/** Sets the foreground of the text to be the default color */
+export const FG_DEFAULT: 37 = 37;
+/** Sets the background of the text to be the default color (none) */
+export const BG_DEFAULT: 47 = 47;
 /** Signals following parameters will specify a custom foreground text color */
 export const FG_CUSTOM: 38 = 38;
 /** Signals following parameters will specify a custom background color */
@@ -52,7 +56,7 @@ export const COLOR_MODE_24BIT: 2 = 2;
 /** Start of the foreground text color (3bit) range */
 export const FG_START: 30 = 30;
 /** End of the foreground text color (3bit) range */
-export const FG_END: 39 = 39;
+export const FG_END: 37 = 37;
 /** Start of the bright foreground text color (3bit) range */
 export const FG_BRIGHT_START: 90 = 90;
 /** End of the bright foreground text color (3bit) range */
@@ -60,7 +64,7 @@ export const FG_BRIGHT_END: 97 = 97;
 /** Start of the background color (3bit) range */
 export const BG_START: 40 = 40;
 /** End of the background color (3bit) range */
-export const BG_END: 49 = 49;
+export const BG_END: 47 = 47;
 /** Start of the bright background color (3bit) range */
 export const BG_BRIGHT_START: 100 = 100;
 /** End of the bright background color (3bit) range */
