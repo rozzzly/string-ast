@@ -32,6 +32,10 @@ export class AnsiEscapeNode extends BaseTextChunkNode<AnsiEscapeNodeKind> {
             }
         }
 
+        if (strat.mode === 'display') {
+            result.value = `\\u001b[${this.params.join(';')}m`;
+        }
+
         return result;
     }
 }
