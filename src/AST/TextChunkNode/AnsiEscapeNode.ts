@@ -16,6 +16,12 @@ export class AnsiEscapeNode extends BaseTextChunkNode<AnsiEscapeNodeKind> {
         this.params = params;
     }
 
+    public clone(): AnsiEscapeNode;
+    public clone(overrideParent: AnsiTextSpanNode): AnsiEscapeNode;
+    public clone(overrideParent?: AnsiTextSpanNode) {
+        return new AnsiEscapeNode(overrideParent || this.parent, this.params);
+    }
+
     public toJSON(): object;
     public toJSON(strategy: Partial<SerializeStrategy>): object;
     public toJSON(strategy: Partial<SerializeStrategy> = {}): object {

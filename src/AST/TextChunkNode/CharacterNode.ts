@@ -13,5 +13,11 @@ export class CharacterNode extends BaseTextChunkNode<CharacterNodeKind> {
         super(parent, value);
         this.width = widthOf(value);
     }
+
+    public clone(): CharacterNode;
+    public clone(overrideParent: TextSpanNode): CharacterNode;
+    public clone(overrideParent?: TextSpanNode): CharacterNode {
+        return new CharacterNode(overrideParent || this.parent, this.value);
+    }
 }
 

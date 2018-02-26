@@ -19,8 +19,8 @@ const computers = {
     width: <T extends TextSpanNodeKind>(self: BaseTextSpanNode<T>) => self.children.reduce((reduction, child) => reduction + child.width, 0)
 };
 
-export abstract class BaseTextSpanNode<T extends TextSpanNodeKind> extends ComputedNode<T> implements HasRaw {
-    public abstract kind: T;
+export abstract class BaseTextSpanNode<K extends TextSpanNodeKind> extends ComputedNode<K> implements HasRaw {
+    public abstract kind: K;
     public abstract raw: string;
     public text: string;
     public parent: RootNode;
@@ -93,6 +93,9 @@ export abstract class BaseTextSpanNode<T extends TextSpanNodeKind> extends Compu
             });
         }
     }
+
+    public abstract clone(): BaseTextSpanNode<K>;
+    public abstract clone(overrideParent: RootNode): BaseTextSpanNode<K>;
 
     public toString() {
         return this.raw;

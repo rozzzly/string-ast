@@ -21,6 +21,15 @@ export class Location implements LocationData, Serializable {
         this.plainTextOffset = location.plainTextOffset;
     }
 
+    public clone(): Location {
+        return new Location({
+            line: this.line,
+            column: this.column,
+            offset: this.offset,
+            plainTextOffset: this.plainTextOffset
+        });
+    }
+
     public toJSON(): object;
     public toJSON(strategy: Partial<SerializeStrategy>): object;
     public toJSON(strategy: Partial<SerializeStrategy> = {}): object {
@@ -67,6 +76,16 @@ export class CompoundLocation extends Location implements CompoundLocationData {
     public constructor(location: CompoundLocationData) {
         super(location);
         this.relative = location.relative;
+    }
+
+    public clone(): CompoundLocation {
+        return new CompoundLocation({
+            line: this.line,
+            column: this.column,
+            offset: this.offset,
+            plainTextOffset: this.plainTextOffset,
+            relative: this.relative.clone()
+        });
     }
 
     public toJSON(): object {

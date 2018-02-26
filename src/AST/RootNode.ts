@@ -55,6 +55,12 @@ export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNorma
         this.range.stop = new Location({ line, column, offset, plainTextOffset });
     }
 
+    public clone(): RootNode {
+        const result = new RootNode(this.raw, this.normalized);
+        result.children.push(...this.children.map(child => child.clone()));
+        return result;
+    }
+
     public toString(): string {
         return (this as any)[util.inspect.custom]();
     }

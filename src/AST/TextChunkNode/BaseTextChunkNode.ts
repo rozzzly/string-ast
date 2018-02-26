@@ -19,6 +19,10 @@ export abstract class BaseTextChunkNode<K extends TextChunkNodeKind> extends Bas
         this.bytes = value.length;
     }
 
+    public abstract clone(): BaseTextChunkNode<K>;
+    public abstract clone(overrideParent: TextSpanNode): BaseTextChunkNode<K>;
+
+
     public toJSON(): object;
     public toJSON(strategy: Partial<SerializeStrategy>): object;
     public toJSON(strategy: Partial<SerializeStrategy> = {}): object {

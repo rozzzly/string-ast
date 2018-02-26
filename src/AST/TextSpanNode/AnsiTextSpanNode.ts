@@ -71,6 +71,12 @@ export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind> {
         return this.memoized.getMemoizedData('plainTextChildren');
     }
 
+    public clone(): AnsiTextSpanNode;
+    public clone(overrideParent: RootNode): AnsiTextSpanNode;
+    public clone(overrideParent?: RootNode): AnsiTextSpanNode {
+        return new AnsiTextSpanNode(overrideParent || this.parent, this.text, this.style.clone());
+    }
+
     public toJSON(): object;
     public toJSON(strategy: Partial<SerializeStrategy>): object;
     public toJSON(strategy: Partial<SerializeStrategy> = {}): object {

@@ -9,6 +9,7 @@ export const PlainTextSpanNodeKind: 'PlainTextSpanNode' = 'PlainTextSpanNode';
 export type PlainTextSpanNodeKind = typeof PlainTextSpanNodeKind;
 
 export class PlainTextSpanNode extends BaseTextSpanNode<PlainTextSpanNodeKind> {
+    public parent: RootNode;
     public kind: PlainTextSpanNodeKind = PlainTextSpanNodeKind;
     public children: Children<PlainTextChunkNode>;
     public raw: string;
@@ -16,5 +17,11 @@ export class PlainTextSpanNode extends BaseTextSpanNode<PlainTextSpanNodeKind> {
     public constructor(parent: RootNode, text: string) {
         super(parent, text);
         this.raw = text;
+    }
+
+    public clone(): PlainTextSpanNode;
+    public clone(overrideParent: RootNode): PlainTextSpanNode;
+    public clone(overrideParent?: RootNode): PlainTextSpanNode {
+        return new PlainTextSpanNode(overrideParent || this.parent, this.raw);
     }
 }

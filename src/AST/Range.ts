@@ -18,6 +18,10 @@ export class Range implements RangeData, Serializable {
         this.stop = stop;
     }
 
+    public clone(): Range {
+        return new Range(this.start.clone(), this.stop.clone());
+    }
+
     public toString(): string {
         return `${this.start}-${this.stop}`;
     }
