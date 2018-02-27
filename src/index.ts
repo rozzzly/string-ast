@@ -69,6 +69,7 @@ export function parse(str: string): RootNode {
                         if (!isLastNodeOfKind(root.children, 'AnsiTextSpanNode')) {
                             // append a new `AnsiEscapeNode` because one was not there already
                             root.children.push(new AnsiTextSpanNode(root, '', style));
+                            // note: next lines will pick up any `AnsiEscapeNode`s and append them
                         }
                         const previous: AnsiTextSpanNode = root.children.get(-1);
                         // create `AnsiEscapeNodes` and attach them to previous `AnsiTextChunkNode`
