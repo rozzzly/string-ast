@@ -1,13 +1,14 @@
 import * as _  from 'lodash';
 import { Range } from './Range';
 import { NodeKind, Node } from '../AST';
-import { Serializable, HasChildren, SerializeStrategy, defaultSerializeStrategy } from './miscInterfaces';
+import { Serializable, SerializeStrategy, defaultSerializeStrategy, Derived } from './miscInterfaces';
 import { Children, wrapChildren } from './navigation';
 import { Memoizer } from './Memoizer';
 
 
-export abstract class BaseNode<K extends NodeKind> implements Serializable {
+export abstract class BaseNode<K extends NodeKind> implements Serializable, Derived<Node> {
     public abstract kind: K;
+    public abstract derivedFrom?: Node;
     public range: Range;
 
     public abstract clone(): BaseNode<K>;

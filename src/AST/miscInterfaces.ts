@@ -55,10 +55,6 @@ export type Invalidatable<T> = (
     | IsInvalidated
 );
 
-export interface Derived<T extends BaseNode<any>> {
-    derivedFrom?: T;
-}
-
-export interface HasChildren<T extends Node> {
-    children: Children<T>;
+export interface Derived<K extends Node> {
+    derivedFrom?: K;
 }

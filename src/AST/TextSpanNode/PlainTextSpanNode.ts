@@ -4,12 +4,14 @@ import { BaseTextSpanNode } from './BaseTextSpanNode';
 import { NewLineEscapeNode } from '../TextChunkNode/NewLineEscapeNode';
 import { PlainTextChunkNode } from '../TextChunkNode';
 import { Children, wrapChildren } from '../navigation';
+import { Derived } from '../miscInterfaces';
 
 export const PlainTextSpanNodeKind: 'PlainTextSpanNode' = 'PlainTextSpanNode';
 export type PlainTextSpanNodeKind = typeof PlainTextSpanNodeKind;
 
-export class PlainTextSpanNode extends BaseTextSpanNode<PlainTextSpanNodeKind> {
+export class PlainTextSpanNode extends BaseTextSpanNode<PlainTextSpanNodeKind> implements Derived<PlainTextSpanNode> {
     public parent: RootNode;
+    public derivedFrom?: PlainTextSpanNode;
     public kind: PlainTextSpanNodeKind = PlainTextSpanNodeKind;
     public children: Children<PlainTextChunkNode>;
     public raw: string;
@@ -22,6 +24,8 @@ export class PlainTextSpanNode extends BaseTextSpanNode<PlainTextSpanNodeKind> {
     public clone(): PlainTextSpanNode;
     public clone(overrideParent: RootNode): PlainTextSpanNode;
     public clone(overrideParent?: RootNode): PlainTextSpanNode {
-        return new PlainTextSpanNode(overrideParent || this.parent, this.raw);
+        const result = new PlainTextSpanNode(overrideParent || this.parent, this.raw);
+        result.derivedFrom = this;
+        return result;
     }
 }

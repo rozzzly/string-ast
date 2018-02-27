@@ -5,11 +5,10 @@ import { BaseNode, ComputedNode } from '../BaseNode';
 import { Range, CompoundRange } from '../Range';
 import { TextChunkNode } from '../TextChunkNode';
 import { TextSpanNode, TextSpanNodeKind } from '../TextSpanNode';
-import { IsInvalidated, HasRaw, SerializeStrategy, defaultSerializeStrategy, minVerbosity } from '../miscInterfaces';
+import { IsInvalidated, HasRaw, SerializeStrategy, defaultSerializeStrategy, minVerbosity, Derived } from '../miscInterfaces';
 import { Children, wrapChildren } from '../navigation';
 import { LocationData, Location, CompoundLocation } from '../Location';
 import { Memoizer } from '../Memoizer';
-
 
 export interface TextSpanMemoizedData {
     width: number;
@@ -19,8 +18,9 @@ const computers = {
     width: <T extends TextSpanNodeKind>(self: BaseTextSpanNode<T>) => self.children.reduce((reduction, child) => reduction + child.width, 0)
 };
 
-export abstract class BaseTextSpanNode<K extends TextSpanNodeKind> extends ComputedNode<K> implements HasRaw {
+export abstract class BaseTextSpanNode<K extends TextSpanNodeKind> extends ComputedNode<K> implements HasRaw, Derived<TextSpanNode> {
     public abstract kind: K;
+    public abstract derivedFrom?: TextSpanNode;
     public abstract raw: string;
     public text: string;
     public parent: RootNode;

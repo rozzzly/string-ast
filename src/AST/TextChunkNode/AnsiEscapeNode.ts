@@ -1,12 +1,13 @@
 import { BaseTextChunkNode } from './BaseTextChunkNode';
 import { AnsiTextSpanNode } from '../TextSpanNode/AnsiTextSpanNode';
-import { SerializeStrategy, defaultSerializeStrategy, minVerbosity } from '../miscInterfaces';
+import { SerializeStrategy, defaultSerializeStrategy, minVerbosity, Derived } from '../miscInterfaces';
 
 export const AnsiEscapeNodeKind: 'AnsiEscapeNode' = 'AnsiEscapeNode';
 export type AnsiEscapeNodeKind = typeof AnsiEscapeNodeKind;
 
-export class AnsiEscapeNode extends BaseTextChunkNode<AnsiEscapeNodeKind> {
+export class AnsiEscapeNode extends BaseTextChunkNode<AnsiEscapeNodeKind> implements Derived<AnsiEscapeNode> {
     public kind: AnsiEscapeNodeKind = AnsiEscapeNodeKind;
+    public derivedFrom?: AnsiEscapeNode;
     public width: 0 = 0;
     public params: number[];
     public parent: AnsiTextSpanNode;
@@ -19,7 +20,9 @@ export class AnsiEscapeNode extends BaseTextChunkNode<AnsiEscapeNodeKind> {
     public clone(): AnsiEscapeNode;
     public clone(overrideParent: AnsiTextSpanNode): AnsiEscapeNode;
     public clone(overrideParent?: AnsiTextSpanNode) {
-        return new AnsiEscapeNode(overrideParent || this.parent, this.params);
+        const result = new AnsiEscapeNode(overrideParent || this.parent, this.params);
+        result.derivedFrom = this;
+        return result;
     }
 
     public toJSON(): object;

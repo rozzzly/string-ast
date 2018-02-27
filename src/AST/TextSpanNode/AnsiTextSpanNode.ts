@@ -2,7 +2,7 @@ import { RootNode } from '../RootNode';
 import { AnsiStyle } from '../../Ansi/AnsiStyle';
 import { BaseTextSpanNode, TextSpanMemoizedData } from './BaseTextSpanNode';
 import { AnsiEscapeNode } from '../TextChunkNode/AnsiEscapeNode';
-import { IsInvalidated, SerializeStrategy, defaultSerializeStrategy, minVerbosity } from '../miscInterfaces';
+import { IsInvalidated, SerializeStrategy, defaultSerializeStrategy, minVerbosity, Derived } from '../miscInterfaces';
 import { PlainTextChunkNode } from '../TextChunkNode';
 import { Children, wrapChildren } from '../navigation';
 import { Memoizer } from '../Memoizer';
@@ -48,8 +48,9 @@ const computers = {
     }
 };
 
-export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind> {
+export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind> implements Derived<AnsiTextSpanNode> {
     public kind: AnsiTextSpanNodeKind = AnsiTextSpanNodeKind;
+    public derivedFrom?: AnsiTextSpanNode;
     public style: AnsiStyle;
     protected memoized: Memoizer<AnsiTextSpanMemoizedData, this>;
 
@@ -74,7 +75,9 @@ export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind> {
     public clone(): AnsiTextSpanNode;
     public clone(overrideParent: RootNode): AnsiTextSpanNode;
     public clone(overrideParent?: RootNode): AnsiTextSpanNode {
-        return new AnsiTextSpanNode(overrideParent || this.parent, this.text, this.style.clone());
+        const result = new AnsiTextSpanNode(overrideParent || this.parent, this.text, this.style.clone());
+        result.derivedFrom = this;
+        return result;
     }
 
     public toJSON(): object;

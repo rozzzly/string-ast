@@ -2,7 +2,7 @@ import * as util from 'util';
 import { stringify } from 'purdy';
 
 import { Range } from './Range';
-import { HasRaw, HasNormalized, Serializable, SerializeStrategy, defaultSerializeStrategy } from './miscInterfaces';
+import { HasRaw, HasNormalized, Serializable, SerializeStrategy, defaultSerializeStrategy, Derived } from './miscInterfaces';
 import { BaseNode } from './BaseNode';
 import { TextSpanNode } from './TextSpanNode';
 import { Children, wrapChildren } from './navigation';
@@ -12,8 +12,9 @@ import { Location } from './Location';
 export const RootNodeKind: 'RootNode' = 'RootNode';
 export type RootNodeKind = typeof RootNodeKind;
 
-export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNormalized {
+export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNormalized, Derived<RootNode> {
     public kind: RootNodeKind = RootNodeKind;
+    public derivedFrom?: RootNode;
     public raw: string;
     public normalized: string;
     public children: Children<TextSpanNode>;
@@ -57,6 +58,7 @@ export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNorma
 
     public clone(): RootNode {
         const result = new RootNode(this.raw, this.normalized);
+        result.derivedFrom = this;
         result.children.push(...this.children.map(child => child.clone()));
         return result;
     }
