@@ -3,7 +3,7 @@ import { AnsiStyle } from '../../Ansi/AnsiStyle';
 import { BaseTextSpanNode, TextSpanMemoizedData } from './BaseTextSpanNode';
 import { AnsiEscapeNode } from '../TextChunkNode/AnsiEscapeNode';
 import { IsInvalidated, SerializeStrategy, defaultSerializeStrategy, minVerbosity, Derived } from '../miscInterfaces';
-import { PlainTextChunkNode } from '../TextChunkNode';
+import { PlainTextChunkNode, TextChunkNode } from '../TextChunkNode';
 import { Children, wrapChildren } from '../navigation';
 import { Memoizer } from '../Memoizer';
 
@@ -54,8 +54,10 @@ export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind> imp
     public style: AnsiStyle;
     protected memoized: Memoizer<AnsiTextSpanMemoizedData, this>;
 
-    public constructor(parent: RootNode, text: string, style: AnsiStyle) {
-        super(parent, text);
+    public constructor(parent: RootNode, text: string, style: AnsiStyle);
+    public constructor(parent: RootNode, text: string, style: AnsiStyle, children: Children<TextChunkNode>);
+    public constructor(parent: RootNode, text: string, style: AnsiStyle, children?: Children<TextChunkNode>) {
+        super(parent, text, children);
         this.style = style;
         this.memoized.patch(computers);
     }
