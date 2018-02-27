@@ -68,7 +68,7 @@ export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind> imp
         return this.memoized.getMemoizedData('raw');
     }
 
-    public get plainTextChildren(): PlainTextChunkNode[]  {
+    public get plainTextChildren(): Children<PlainTextChunkNode>  {
         return this.memoized.getMemoizedData('plainTextChildren');
     }
 
