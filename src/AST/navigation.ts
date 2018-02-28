@@ -12,6 +12,21 @@ export class GenericCursor<E> {
         this.position = 0;
     }
 
+    public get isEmpty(): boolean { return this.ref.length === 0; }
+
+    public get first(): E {
+        if (this.isEmpty) throw new RangeError();
+        else {
+            return this.ref[0];
+        }
+    }
+    public get last(): E {
+        if (this.isEmpty) throw new RangeError();
+        else {
+            return this.ref[this.ref.length - 1];
+        }
+    }
+
     public get position(): number { return this._position; }
     public set position(value: number) {
         if (inRange(0, this.ref.length - 1, value)) {
@@ -27,6 +42,12 @@ export class GenericCursor<E> {
 
     public get current(): E {
         return this.ref[this._position];
+    }
+
+
+    public reset(): E {
+        this._position = 0;
+        return this.ref[0];
     }
 
     public seek(delta: number): E {
@@ -105,8 +126,7 @@ export class NodeCursor<N extends Node = Node> extends GenericCursor<N> {
             const kindsSafe = Array.isArray(kinds) ? kinds : [ kinds ];
             const result: Node<K>[] = [];
             for (let i = start; i <= end && result.length < count; i++) {
-                const n = this.ref[i];
-                if (kindsSafe.includes(n.kind as K)) result.push(n);
+                if (kindsSafe.includes(this.ref[i].kind as K)) result.push(this.ref[i]);
             }
             return result;
         }
@@ -116,6 +136,44 @@ export class NodeCursor<N extends Node = Node> extends GenericCursor<N> {
     public hasNodesOfKindInRange<K extends KindUnion<N>>(kinds: K[], start: number, end: number): boolean;
     public hasNodesOfKindInRange<K extends KindUnion<N>>(kinds: K | K[], start: number, end: number): boolean {
         return this.nodesOfKindInRange(kinds as K, start, end).length !== 0;
+    }
+
+    public isFirstNodeOfKind<K extends KindUnion<N>>(kinds: K): boolean;
+    public isFirstNodeOfKind<K extends KindUnion<N>>(kinds: K[]): boolean;
+    public isFirstNodeOfKind<K extends KindUnion<N>>(kinds: K | K[]): boolean {
+        if (!this.isEmpty) {
+            const kindsSafe = Array.isArray(kinds) ? kinds : [ kinds ];
+            return kindsSafe.includes(this.first.kind as K);
+        } else throw new RangeError();
+    }
+
+
+    public isLastNodeOfKind<K extends KindUnion<N>>(kinds: K): boolean;
+    public isLastNodeOfKind<K extends KindUnion<N>>(kinds: K[]): boolean;
+    public isLastNodeOfKind<K extends KindUnion<N>>(kinds: K | K[]): boolean {
+        if (!this.isEmpty) {
+            const kindsSafe = Array.isArray(kinds) ? kinds : [ kinds ];
+            return kindsSafe.includes(this.last.kind as K);
+        } else throw new RangeError();
+    }
+
+
+    public lastNodeOfKind<K extends KindUnion<N>>(kinds: K): Node<K>;
+    public lastNodeOfKind<K extends KindUnion<N>>(kinds: K[]): Node<K>;
+    public lastNodeOfKind<K extends KindUnion<N>>(kinds: K | K[]): Node<K> {
+        const kindsSafe = Array.isArray(kinds) ? kinds : [ kinds ];
+        for (let i = this.ref.length - 1; i >= 0; i++) {
+            if (kindsSafe.includes(this.ref[i].kind as K)) return this.ref[i];
+        }
+    }
+
+    public firstNodeOfKind<K extends KindUnion<N>>(kinds: K): Node<K>;
+    public firstNodeOfKind<K extends KindUnion<N>>(kinds: K[]): Node<K>;
+    public firstNodeOfKind<K extends KindUnion<N>>(kinds: K | K[]): Node<K> {
+        const kindsSafe = Array.isArray(kinds) ? kinds : [ kinds ];
+        for (let i = 0; i < this.ref.length; i++) {
+            if (kindsSafe.includes(this.ref[i].kind as K)) return this.ref[i];
+        }
     }
 
     public futureNodesOfKind<K extends KindUnion<N>>(kinds: K): Node<K>[];
@@ -142,7 +200,6 @@ export class NodeCursor<N extends Node = Node> extends GenericCursor<N> {
         const result = this.futureNodesOfKind(kinds as K, 1);
         return result.length !== 0 ? result[0] : undefined;
     }
-
 
     public previousNodeOfKind<K extends KindUnion<N>>(kinds: K): Node<K>;
     public previousNodeOfKind<K extends KindUnion<N>>(kinds: K[]): Node<K>;
@@ -179,7 +236,6 @@ export class NodeCursor<N extends Node = Node> extends GenericCursor<N> {
         if (!this.canReverse()) throw RangeError();
         const kindsSafe = Array.isArray(kinds) ? kinds : [ kinds ];
         return kindsSafe.includes(this.ref[this.position - 1] as any);
-
     }
 
     public advanceUntilNodeOfKind<K extends KindUnion<N>>(kind: K): boolean;
