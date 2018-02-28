@@ -1,8 +1,93 @@
 import { NodeKind, Node, NodeLookup } from '../AST';
 import { inRange } from '../misc';
+import { Range } from './Range';
 
 export const IsChildren: unique symbol = Symbol('[string-ast]::AST/navigation.Children');
 export type IsInvalidated = typeof IsChildren;
+
+class Cursor<N extends Node> {
+    private _position: number;
+    private ref: N[];
+
+    public constructor(value: N[]) {
+        this.ref = value;
+        this.position = 0;
+    }
+
+    public get position(): number { return this._position; }
+    public set position(value: number) {
+        if (inRange(0, this.ref.length - 1, value)) {
+            this._position = value;
+        } else if (inRange(0 - this.ref.length, -1, value)) {
+            this._position = this.ref.length - Math.abs(value);
+        } else throw new RangeError();
+    }
+
+    public get length(): number {
+         return this.ref.length;
+    }
+
+    public get current(): N {
+        return this.ref[this._position];
+    }
+
+    public seek(delta: number): N {
+        const nPos = this._position + delta;
+        if (inRange(0, this.ref.length - 1, nPos)) {
+            this._position = nPos;
+            return this.ref[this._position];
+        } else throw new RangeError();
+    }
+
+    public hasNext(): boolean {
+        return this._position < (this.ref.length - 1);
+    }
+    public hasPrev(): boolean {
+        return this._position > 0;
+    }
+    public next(): N {
+        if (this.hasNext) {
+            return this.ref[++this._position];
+        } else {
+            throw new RangeError();
+        }
+    }
+    public prev(): N {
+        if (this.hasNext) {
+            return this.ref[--this._position];
+        } else {
+            throw new RangeError();
+        }
+    }
+    public seekNPeek(delta: number): N {
+        const nPos = this._position + delta;
+        if (inRange(0, this.ref.length - 1, nPos)) {
+            return this.ref[nPos];
+        } else throw new RangeError();
+    }
+    public peekAt(index: number): N {
+        if (inRange(0, this.ref.length - 1, index)) {
+            return this.ref[index];
+        } else if (inRange(0 - this.ref.length, -1, index)) {
+            return this.ref[this.ref.length - Math.abs(index)];
+        } else throw new RangeError();
+    }
+    public peekNext(): N {
+        if (this.hasNext) {
+            return this.ref[this._position + 1];
+        } else {
+            throw new RangeError();
+        }
+    }
+    public peekPrev(): N {
+        if (this.hasNext) {
+            return this.ref[this._position - 1];
+        } else {
+            throw new RangeError();
+        }
+    }
+
+}
 
 
 export interface Children<U> extends Array<U> {

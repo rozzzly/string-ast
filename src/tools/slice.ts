@@ -73,6 +73,8 @@ export function sliceByPlainTextBytes(root: RootNode, start: number, stop?: numb
                         included.push(...currentSpan.relatedEscapes.after);
                     }
 
+                    /// TODO ::: clone children
+
                     // create new `TextSpanNode`
                     const text = included.reduce((reduction, chunk) => (chunk.kind === 'AnsiEscapeNode') ? reduction : reduction + chunk.value, '');
                     let nSpan: TextSpanNode = (currentSpan.kind === 'PlainTextSpanNode') ? (
