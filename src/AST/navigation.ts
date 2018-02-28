@@ -1,9 +1,7 @@
-import { NodeKind, Node, NodeLookup } from '../AST';
+import { NodeKind, Node, NodeLookup, KindUnion } from '../AST';
 import { inRange } from '../misc';
 import { Range } from './Range';
-
-export const IsChildren: unique symbol = Symbol('[string-ast]::AST/navigation.Children');
-export type IsInvalidated = typeof IsChildren;
+import { TextSpanNode } from './TextSpanNode';
 
 export class GenericCursor<E> {
     protected _position: number;
@@ -42,29 +40,34 @@ export class GenericCursor<E> {
     public canAdvance(): boolean {
         return this._position < (this.ref.length - 1);
     }
+
     public canReverse(): boolean {
         return this._position > 0;
     }
+
     public advance(): E {
-        if (this._position < (this.ref.length - 1)) {
+        if (this.canAdvance()) {
             return this.ref[++this._position];
         } else {
             throw new RangeError();
         }
     }
+
     public reverse(): E {
-        if (this._position > 0) {
+        if (this.canReverse()) {
             return this.ref[--this._position];
         } else {
             throw new RangeError();
         }
     }
+
     public seekNPeek(delta: number): E {
         const nPos = this._position + delta;
         if (inRange(0, this.ref.length - 1, nPos)) {
             return this.ref[nPos];
         } else throw new RangeError();
     }
+
     public peekAt(index: number): E {
         if (inRange(0, this.ref.length - 1, index)) {
             return this.ref[index];
@@ -72,15 +75,17 @@ export class GenericCursor<E> {
             return this.ref[this.ref.length - Math.abs(index)];
         } else throw new RangeError();
     }
+
     public peekNext(): E {
-        if (this.canAdvance) {
+        if (this.canAdvance()) {
             return this.ref[this._position + 1];
         } else {
             throw new RangeError();
         }
     }
+
     public peekPrev(): E {
-        if (this.canAdvance) {
+        if (this.canAdvance()) {
             return this.ref[this._position - 1];
         } else {
             throw new RangeError();
@@ -89,77 +94,128 @@ export class GenericCursor<E> {
 
 }
 
-export class NodeCursor<N extends Node = Node, K extends NodeKind = NodeKind> extends GenericCursor<N> {
-    public hasNodeOfKind(kind: K): boolean;
-    public hasNodeOfKind(kinds: K[]): boolean;
-    public hasNodeOfKind(args: K | K[]): boolean {
-        const kindsSafe = Array.isArray(args) ? args : [ args ];
-        return this.ref.some(v => kindsSafe.includes(v.kind as any));
-    }
-
-    public isNodeOfKind(kind: K): boolean;
-    public isNodeOfKind(kinds: K[]): boolean;
-    public isNodeOfKind(args: K | K[]): boolean {
-        const kindsSafe = Array.isArray(args) ? args : [ args ];
-        return kindsSafe.includes(this.ref[this._position].kind as any);
-    }
-
-    
-    public advanceUntilNodeOfKind(kind: K): boolean;
-    public advanceUntilNodeOfKind(kinds: K[]): boolean;
-    public advanceUntilNodeOfKind(args: K | K[]): U | undefined {
-        while (this.canAdvance()) {
-            this.advance().kind.includes;
-    }
-}
-export interface Children<U> extends Array<U> {
-    get<T extends U = U>(index: number): T;
-    [IsChildren]: true;
-}
-
-export function wrapChildren<U>(): Children<U>;
-export function wrapChildren<U>(children: U[]): Children<U>;
-export function wrapChildren<U>(children: U[] = []): Children<U> {
-    // prevent double wrapping
-    if ((children as any)[IsChildren]) return children as any;
-
-    // prevent mutations
-    const result: Children<U> = [...children] as any;
-
-    Object.defineProperty(result, IsChildren, {
-        enumerable: false,
-        value: true
-    });
-    Object.defineProperty(result, 'get', {
-        enumerable: false,
-        value: <T extends U>(index: number): T => {
-            if (inRange(0, result.length - 1, index)) {
-                return result[index] as T;
-            } if (inRange(0 - result.length, -1, index)) {
-                return result[result.length - Math.abs(index)] as T;
-            } else {
-                throw new RangeError(); /// TODO ::: more descriptive errors
+export class NodeCursor<N extends Node = Node> extends GenericCursor<N> {
+    public nodesOfKindInRange<K extends KindUnion<N>>(kinds: K, start: number, end: number): Node<K>[];
+    public nodesOfKindInRange<K extends KindUnion<N>>(kinds: K[], start: number, end: number): Node<K>[];
+    public nodesOfKindInRange<K extends KindUnion<N>>(kinds: K, start: number, end: number, count: number): Node<K>[];
+    public nodesOfKindInRange<K extends KindUnion<N>>(kinds: K[], start: number, end: number, count: number): Node<K>[];
+    public nodesOfKindInRange<K extends KindUnion<N>>(kinds: K | K[], start: number, end: number, count: number = Infinity): Node<K>[] {
+        if (!inRange(0, this.ref.length - 1, start)) throw new RangeError();
+        else {
+            const kindsSafe = Array.isArray(kinds) ? kinds : [ kinds ];
+            const result: Node<K>[] = [];
+            for (let i = start; i <= end && result.length < count; i++) {
+                const n = this.ref[i];
+                if (kindsSafe.includes(n.kind as K)) result.push(n);
             }
+            return result;
         }
+    }
+
+    public hasNodesOfKindInRange<K extends KindUnion<N>>(kinds: K, start: number, end: number): boolean;
+    public hasNodesOfKindInRange<K extends KindUnion<N>>(kinds: K[], start: number, end: number): boolean;
+    public hasNodesOfKindInRange<K extends KindUnion<N>>(kinds: K | K[], start: number, end: number): boolean {
+        return this.nodesOfKindInRange(kinds as K, start, end).length !== 0;
+    }
+
+    public futureNodesOfKind<K extends KindUnion<N>>(kinds: K): Node<K>[];
+    public futureNodesOfKind<K extends KindUnion<N>>(kinds: K[]): Node<K>[];
+    public futureNodesOfKind<K extends KindUnion<N>>(kinds: K, count: number): Node<K>[];
+    public futureNodesOfKind<K extends KindUnion<N>>(kinds: K[], count: number): Node<K>[];
+    public futureNodesOfKind<K extends KindUnion<N>>(kinds: K | K[], count: number = Infinity): Node<K>[] {
+        if (!this.canAdvance()) throw new RangeError();
+        return this.nodesOfKindInRange(kinds as K, this.position + 1, this.ref.length - 1, count);
+    }
+
+    public pastNodesOfKind<K extends KindUnion<N>>(kinds: K): Node<K>[];
+    public pastNodesOfKind<K extends KindUnion<N>>(kinds: K[]): Node<K>[];
+    public pastNodesOfKind<K extends KindUnion<N>>(kinds: K, count: number): Node<K>[];
+    public pastNodesOfKind<K extends KindUnion<N>>(kinds: K[], count: number): Node<K>[];
+    public pastNodesOfKind<K extends KindUnion<N>>(kinds: K | K[], count: number = Infinity): Node<K>[] {
+        if (!this.canReverse()) throw new RangeError();
+        return this.nodesOfKindInRange(kinds as K, this.position + 1, this.ref.length - 1, count);
+    }
+
+    public nextNodeOfKind<K extends KindUnion<N>>(kinds: K): Node<K>;
+    public nextNodeOfKind<K extends KindUnion<N>>(kinds: K[]): Node<K>;
+    public nextNodeOfKind<K extends KindUnion<N>>(kinds: K | K[]): Node<K> | undefined {
+        const result = this.futureNodesOfKind(kinds as K, 1);
+        return result.length !== 0 ? result[0] : undefined;
+    }
+
+
+    public previousNodeOfKind<K extends KindUnion<N>>(kinds: K): Node<K>;
+    public previousNodeOfKind<K extends KindUnion<N>>(kinds: K[]): Node<K>;
+    public previousNodeOfKind<K extends KindUnion<N>>(kinds: K | K[]): Node<K> | undefined {
+        const result = this.pastNodesOfKind(kinds as K, 1);
+        return result.length !== 0 ? result[0] : undefined;
+    }
+
+    public hasNodeOfKind<K extends KindUnion<N>>(kind: K): boolean;
+    public hasNodeOfKind<K extends KindUnion<N>>(kinds: K[]): boolean;
+    public hasNodeOfKind<K extends KindUnion<N>>(kinds: K | K[]): boolean {
+        const kindsSafe = Array.isArray(kinds) ? kinds : [ kinds ];
+        return this.ref.some(v => kindsSafe.includes(v.kind as K));
+    }
+
+    public isNodeOfKind<K extends KindUnion<N>>(kind: K): boolean;
+    public isNodeOfKind<K extends KindUnion<N>>(kinds: K[]): boolean;
+    public isNodeOfKind<K extends KindUnion<N>>(kinds: K | K[]): boolean {
+        const kindsSafe = Array.isArray(kinds) ? kinds : [ kinds ];
+        return kindsSafe.includes(this.ref[this._position].kind as K);
+    }
+
+    public isNextNodeOfKind<K extends KindUnion<N>>(kinds: K): boolean;
+    public isNextNodeOfKind<K extends KindUnion<N>>(kinds: K[]): boolean;
+    public isNextNodeOfKind<K extends KindUnion<N>>(kinds: K | K[]): boolean {
+        if (!this.canAdvance()) throw RangeError();
+        const kindsSafe = Array.isArray(kinds) ? kinds : [ kinds ];
+        return kindsSafe.includes(this.ref[this.position + 1] as any);
+    }
+
+    public isPreviousNodeOfKind<K extends KindUnion<N>>(kinds: K): boolean;
+    public isPreviousNodeOfKind<K extends KindUnion<N>>(kinds: K[]): boolean;
+    public isPreviousNodeOfKind<K extends KindUnion<N>>(kinds: K | K[]): boolean {
+        if (!this.canReverse()) throw RangeError();
+        const kindsSafe = Array.isArray(kinds) ? kinds : [ kinds ];
+        return kindsSafe.includes(this.ref[this.position - 1] as any);
+
+    }
+
+    public advanceUntilNodeOfKind<K extends KindUnion<N>>(kind: K): boolean;
+    public advanceUntilNodeOfKind<K extends KindUnion<N>>(kinds: K[]): boolean;
+    public advanceUntilNodeOfKind<K extends KindUnion<N>>(kinds: K | K[]): Node<K> | undefined {
+        const kindsSafe = Array.isArray(kinds) ? kinds : [ kinds ];
+        while (this.canAdvance()) {
+            if (kindsSafe.includes(this.advance().kind as K)) return this.current;
+        }
+        return undefined;
+    }
+
+    public reverseUntilNodeOfKind<K extends KindUnion<N>>(kind: K): boolean;
+    public reverseUntilNodeOfKind<K extends KindUnion<N>>(kinds: K[]): boolean;
+    public reverseUntilNodeOfKind<K extends KindUnion<N>>(kinds: K | K[]): Node<K> | undefined {
+        const kindsSafe = Array.isArray(kinds) ? kinds : [ kinds ];
+        while (this.canReverse()) {
+            if (kindsSafe.includes(this.reverse().kind as K)) return this.current;
+        }
+        return undefined;
+    }
+}
+export interface Children<K extends Node> extends Array<K> {
+    createCursor(): NodeCursor<K>;
+}
+
+export function wrapChildren<K extends Node>(): Children<K>;
+export function wrapChildren<K extends Node>(children: K[]): Children<K>;
+export function wrapChildren<K extends Node>(children: K[] = []): Children<K> {
+    // prevent mutations
+    const result: Children<K> = [...children] as any;
+
+    Object.defineProperty(result, 'createCursor', {
+        enumerable: false,
+        value: (): NodeCursor<K> => new NodeCursor(result)
     });
 
     return result;
-}
-
-export function previousNodeOfKind<K extends NodeKind>(children: Node[], kind: K): NodeLookup[K] {
-    for (let i = children.length - 1; i >= 0; i--) {
-        if (children[i].kind === kind) return children[i];
-    }
-    return undefined;
-}
-
-export function hasPreviousNodeOfKind(children: Node[], kind: NodeKind): boolean {
-    for (let i = children.length - 1; i >= 0; i--) {
-        if (children[i].kind === kind) return true;
-    }
-    return false;
-}
-
-export function isLastNodeOfKind(children: Node[], kind: NodeKind): boolean {
-    return children.length && children[children.length - 1].kind === kind;
 }

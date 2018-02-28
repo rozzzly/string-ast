@@ -5,11 +5,6 @@ import { RootNode, RootNodeKind } from './RootNode';
 import { TextSpanNode, TextSpanNodeKind, TextSpanNodeLookup } from './TextSpanNode';
 import { TextChunkNode, TextChunkNodeKind, TextChunkNodeLookup } from './TextChunkNode';
 
-export type Node = (
-    | RootNode
-    | TextSpanNode
-    | TextChunkNode
-);
 
 export type NodeKind = (
     | RootNodeKind
@@ -17,6 +12,10 @@ export type NodeKind = (
     | TextChunkNodeKind
 );
 
+export type KindUnion<N extends Node = Node> = N['kind'];
+
 export interface NodeLookup extends TextChunkNodeLookup, TextSpanNodeLookup {
     [RootNodeKind]: RootNode;
 }
+
+export type Node<K extends NodeKind = NodeKind> = NodeLookup[K];
