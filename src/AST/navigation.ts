@@ -5,11 +5,11 @@ import { Range } from './Range';
 export const IsChildren: unique symbol = Symbol('[string-ast]::AST/navigation.Children');
 export type IsInvalidated = typeof IsChildren;
 
-class Cursor<N extends Node> {
-    private _position: number;
-    private ref: N[];
+export class GenericCursor<E> {
+    protected _position: number;
+    protected ref: E[];
 
-    public constructor(value: N[]) {
+    public constructor(value: E[]) {
         this.ref = value;
         this.position = 0;
     }
@@ -27,11 +27,11 @@ class Cursor<N extends Node> {
          return this.ref.length;
     }
 
-    public get current(): N {
+    public get current(): E {
         return this.ref[this._position];
     }
 
-    public seek(delta: number): N {
+    public seek(delta: number): E {
         const nPos = this._position + delta;
         if (inRange(0, this.ref.length - 1, nPos)) {
             this._position = nPos;
@@ -39,48 +39,48 @@ class Cursor<N extends Node> {
         } else throw new RangeError();
     }
 
-    public hasNext(): boolean {
+    public canAdvance(): boolean {
         return this._position < (this.ref.length - 1);
     }
-    public hasPrev(): boolean {
+    public canReverse(): boolean {
         return this._position > 0;
     }
-    public next(): N {
-        if (this.hasNext) {
+    public advance(): E {
+        if (this._position < (this.ref.length - 1)) {
             return this.ref[++this._position];
         } else {
             throw new RangeError();
         }
     }
-    public prev(): N {
-        if (this.hasNext) {
+    public reverse(): E {
+        if (this._position > 0) {
             return this.ref[--this._position];
         } else {
             throw new RangeError();
         }
     }
-    public seekNPeek(delta: number): N {
+    public seekNPeek(delta: number): E {
         const nPos = this._position + delta;
         if (inRange(0, this.ref.length - 1, nPos)) {
             return this.ref[nPos];
         } else throw new RangeError();
     }
-    public peekAt(index: number): N {
+    public peekAt(index: number): E {
         if (inRange(0, this.ref.length - 1, index)) {
             return this.ref[index];
         } else if (inRange(0 - this.ref.length, -1, index)) {
             return this.ref[this.ref.length - Math.abs(index)];
         } else throw new RangeError();
     }
-    public peekNext(): N {
-        if (this.hasNext) {
+    public peekNext(): E {
+        if (this.canAdvance) {
             return this.ref[this._position + 1];
         } else {
             throw new RangeError();
         }
     }
-    public peekPrev(): N {
-        if (this.hasNext) {
+    public peekPrev(): E {
+        if (this.canAdvance) {
             return this.ref[this._position - 1];
         } else {
             throw new RangeError();
@@ -89,7 +89,29 @@ class Cursor<N extends Node> {
 
 }
 
+export class NodeCursor<N extends Node = Node, K extends NodeKind = NodeKind> extends GenericCursor<N> {
+    public hasNodeOfKind(kind: K): boolean;
+    public hasNodeOfKind(kinds: K[]): boolean;
+    public hasNodeOfKind(args: K | K[]): boolean {
+        const kindsSafe = Array.isArray(args) ? args : [ args ];
+        return this.ref.some(v => kindsSafe.includes(v.kind as any));
+    }
 
+    public isNodeOfKind(kind: K): boolean;
+    public isNodeOfKind(kinds: K[]): boolean;
+    public isNodeOfKind(args: K | K[]): boolean {
+        const kindsSafe = Array.isArray(args) ? args : [ args ];
+        return kindsSafe.includes(this.ref[this._position].kind as any);
+    }
+
+    
+    public advanceUntilNodeOfKind(kind: K): boolean;
+    public advanceUntilNodeOfKind(kinds: K[]): boolean;
+    public advanceUntilNodeOfKind(args: K | K[]): U | undefined {
+        while (this.canAdvance()) {
+            this.advance().kind.includes;
+    }
+}
 export interface Children<U> extends Array<U> {
     get<T extends U = U>(index: number): T;
     [IsChildren]: true;
