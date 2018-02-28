@@ -1,5 +1,5 @@
 import { RootNode } from '../AST/RootNode';
-import { previousNodeOfKind, wrapChildren, Children } from '../AST/navigation';
+import { wrapChildren, Children } from '../AST/navigation';
 import { NewLineEscapeNode } from '../AST/TextChunkNode/NewLineEscapeNode';
 import { CharacterNode } from '../AST/TextChunkNode/CharacterNode';
 import { Location } from '../AST/Location';

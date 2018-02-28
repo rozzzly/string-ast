@@ -8,11 +8,11 @@ import { inRange, groupContiguous } from './misc';
 import { parseColorCode } from './Ansi/AnsiColor';
 import { ansiStyleRegex, normalize, ansiStyleParamsRegex } from './Ansi/utils';
 import { AnsiTextSpanNode } from './AST/TextSpanNode/AnsiTextSpanNode';
-import { isLastNodeOfKind } from './AST/navigation';
 
 export function parse(str: string): RootNode {
     const normalized = normalize(str);
     const root: RootNode = new RootNode(str, normalized);
+    const rc = root.children.createCursor();
     let style: AnsiStyle = baseStyle.clone();
 
     let raw: string = '';
@@ -66,12 +66,12 @@ export function parse(str: string): RootNode {
                     }
                     if (parts.length === index - 1) { // this is the last part (ie: string ends with ANSI escape sequence)
                         // ensure `RootNode` ends in a `AnsiEscapeNode`
-                        if (!isLastNodeOfKind(root.children, 'AnsiTextSpanNode')) {
+                        if (!rc.isLastNodeOfKind('AnsiTextSpanNode')) {
                             // append a new `AnsiEscapeNode` because one was not there already
                             root.children.push(new AnsiTextSpanNode(root, '', style));
                             // note: next lines will pick up any `AnsiEscapeNode`s and append them
                         }
-                        const previous: AnsiTextSpanNode = root.children.get(-1);
+                        const previous: AnsiTextSpanNode = rc.last();
                         // create `AnsiEscapeNodes` and attach them to previous `AnsiTextChunkNode`
                         const escapeNodes: AnsiEscapeNode[] = escapes.map(escapeParams => (
                             new AnsiEscapeNode(previous, escapeParams)
@@ -84,8 +84,8 @@ export function parse(str: string): RootNode {
                     root.children.push(new PlainTextSpanNode(root, part));
                 } else {
                     // there are unhandled escapes, but is part has the "base" style. Let's just attach these escapes to the previous `AnsiTextChunkNode`
-                    if (style.equalTo(baseStyle) && isLastNodeOfKind(root.children, 'AnsiTextSpanNode')) {
-                        const previous: AnsiTextSpanNode = root.children.get(-1);
+                    if (style.equalTo(baseStyle) && rc.isLastNodeOfKind('AnsiTextSpanNode')) {
+                        const previous: AnsiTextSpanNode = rc.last();
                         // create `AnsiEscapeNodes` and attach them to previous `AnsiTextChunkNode`
                         const escapeNodes: AnsiEscapeNode[] = escapes.map(params => (
                             new AnsiEscapeNode(previous, params)

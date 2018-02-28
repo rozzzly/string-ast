@@ -14,16 +14,16 @@ export class GenericCursor<E> {
 
     public get isEmpty(): boolean { return this.ref.length === 0; }
 
-    public get first(): E {
+    public first<T extends E = E>(): T {
         if (this.isEmpty) throw new RangeError();
         else {
-            return this.ref[0];
+            return this.ref[0] as T;
         }
     }
-    public get last(): E {
+    public last<T extends E = E>(): T {
         if (this.isEmpty) throw new RangeError();
         else {
-            return this.ref[this.ref.length - 1];
+            return this.ref[this.ref.length - 1] as T;
         }
     }
 
@@ -50,11 +50,11 @@ export class GenericCursor<E> {
         return this.ref[0];
     }
 
-    public seek(delta: number): E {
+    public seek<T extends E = T>(delta: number): T {
         const nPos = this._position + delta;
         if (inRange(0, this.ref.length - 1, nPos)) {
             this._position = nPos;
-            return this.ref[this._position];
+            return this.ref[this._position] as T;
         } else throw new RangeError();
     }
 
@@ -66,48 +66,48 @@ export class GenericCursor<E> {
         return this._position > 0;
     }
 
-    public advance(): E {
+    public advance<T extends E = E>(): T {
         if (this.canAdvance()) {
-            return this.ref[++this._position];
+            return this.ref[++this._position] as T ;
         } else {
             throw new RangeError();
         }
     }
 
-    public reverse(): E {
+    public reverse<T extends E = E>(): T {
         if (this.canReverse()) {
-            return this.ref[--this._position];
+            return this.ref[--this._position] as T;
         } else {
             throw new RangeError();
         }
     }
 
-    public seekNPeek(delta: number): E {
+    public seekNPeek<T extends E = E>(delta: number): T {
         const nPos = this._position + delta;
         if (inRange(0, this.ref.length - 1, nPos)) {
-            return this.ref[nPos];
+            return this.ref[nPos] as T;
         } else throw new RangeError();
     }
 
-    public peekAt(index: number): E {
+    public peekAt<T extends E = E>(index: number): T {
         if (inRange(0, this.ref.length - 1, index)) {
-            return this.ref[index];
+            return this.ref[index] as T;
         } else if (inRange(0 - this.ref.length, -1, index)) {
-            return this.ref[this.ref.length - Math.abs(index)];
+            return this.ref[this.ref.length - Math.abs(index)] as T;
         } else throw new RangeError();
     }
 
-    public peekNext(): E {
+    public peekNext<T extends E = E>(): T {
         if (this.canAdvance()) {
-            return this.ref[this._position + 1];
+            return this.ref[this._position + 1] as T;
         } else {
             throw new RangeError();
         }
     }
 
-    public peekPrev(): E {
+    public peekPrev<T extends E = E>(): T {
         if (this.canAdvance()) {
-            return this.ref[this._position - 1];
+            return this.ref[this._position - 1] as T;
         } else {
             throw new RangeError();
         }
@@ -143,7 +143,7 @@ export class NodeCursor<N extends Node = Node> extends GenericCursor<N> {
     public isFirstNodeOfKind<K extends KindUnion<N>>(kinds: K | K[]): boolean {
         if (!this.isEmpty) {
             const kindsSafe = Array.isArray(kinds) ? kinds : [ kinds ];
-            return kindsSafe.includes(this.first.kind as K);
+            return kindsSafe.includes(this.first().kind as K);
         } else throw new RangeError();
     }
 
@@ -153,7 +153,7 @@ export class NodeCursor<N extends Node = Node> extends GenericCursor<N> {
     public isLastNodeOfKind<K extends KindUnion<N>>(kinds: K | K[]): boolean {
         if (!this.isEmpty) {
             const kindsSafe = Array.isArray(kinds) ? kinds : [ kinds ];
-            return kindsSafe.includes(this.last.kind as K);
+            return kindsSafe.includes(this.last().kind as K);
         } else throw new RangeError();
     }
 

@@ -9,9 +9,10 @@ import { Colors } from '../../../../src/Ansi/AnsiColor';
 test('chalk wrapped string with bold text', t => {
     const str: string = `normal ${chalk.bold('bold')} normal`;
     const ast = parse(str);
+    const rc = ast.children.createCursor();
 
     t.is(ast.children.length, 3);
-    const node: AnsiTextSpanNode = ast.children.get(1);
+    const node: AnsiTextSpanNode = rc.peekAt(1);
     t.is(node.kind, 'AnsiTextSpanNode');
     t.true(node.style.bold);
     t.is(node.style.weight, 'bold');
@@ -20,12 +21,13 @@ test('chalk wrapped string with bold text', t => {
 test('nested chalk string with colored text inside bold text', t => {
     const str: string = `normal ${chalk.bold(`bold ${chalk.red('boldRed')}`)} normal`;
     const ast = parse(str);
+    const rc = ast.children.createCursor();
 
-    t.is(ast.children.length, 4);
+    t.is(rc.length, 4);
 
-    const boldNode: AnsiTextSpanNode = ast.children.get(1);
-    const boldRedNode: AnsiTextSpanNode = ast.children.get(2);
-    const finalNode: PlainTextSpanNode = ast.children.get(3);
+    const boldNode: AnsiTextSpanNode = rc.peekAt(1);
+    const boldRedNode: AnsiTextSpanNode = rc.peekAt(2);
+    const finalNode: PlainTextSpanNode = rc.peekAt(3);
 
     t.is(boldNode.kind, 'AnsiTextSpanNode');
     t.true(boldNode.style.bold);
