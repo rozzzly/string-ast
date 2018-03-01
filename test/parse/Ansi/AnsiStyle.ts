@@ -9,8 +9,9 @@ import { Colors } from '../../../src/Ansi/AnsiColor';
 test('chalk-wrapped string', t => {
     const str: string = chalk.red.bold('some text');
     const ast = parse(str);
+    const rc = ast.children.createCursor();
 
-    const node: AnsiTextSpanNode = ast.children.get(0);
+    const node: AnsiTextSpanNode = rc.peekAt(0);
     const style: AnsiStyle = node.style;
     t.truthy(style);
     t.true(style.fgColor.equalTo(Colors.fg.RED));
@@ -21,11 +22,12 @@ test('chalk-wrapped string', t => {
 test('multiple AnsiTextSpans in a string', t => {
     const str: string = `This is ${chalk.red('red')} and this is ${chalk.greenBright('bright green')}!`;
     const ast = parse(str);
+    const rc = ast.children.createCursor();
 
     console.log(ast);
 
-    const red: AnsiTextSpanNode = ast.children.get(1);
-    const green: AnsiTextSpanNode = ast.children.get(3);
+    const red: AnsiTextSpanNode = rc.peekAt(1);
+    const green: AnsiTextSpanNode = rc.peekAt(3);
     t.true(red.style.fgColor.equalTo(Colors.fg.RED));
     t.true(green.style.fgColor.equalTo(Colors.fg.bright.GREEN));
 });

@@ -39,7 +39,7 @@ export function sliceByPlainTextOffset(root: RootNode, start: number, stop?: num
     if (!inRange(0, rightBound, start_safe)) throw new RangeError();
     if (!inRange(0, rightBound, stop_safe)) throw new RangeError();
 
-    const nRoot = root.clone();
+    const nRoot = root.clone([]);
     let cursorOffset: number = 0;
 
     let currentSpan = rc.current;
@@ -112,6 +112,11 @@ export function sliceByPlainTextOffset(root: RootNode, start: number, stop?: num
 
     // rebuild ranges
     nRoot.calculateRange();
+
+    // reset text on `RootNode`
+    const raw = nRoot.children.reduce((reduction, child) => reduction + child.text, '');
+    nRoot.raw = raw;
+    nRoot.normalized = raw;
 
     return nRoot;
 }

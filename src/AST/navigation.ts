@@ -9,7 +9,7 @@ export class GenericCursor<E> {
 
     public constructor(value: E[]) {
         this.ref = value;
-        this.position = 0;
+        this._position = 0;
     }
 
     public get isEmpty(): boolean { return this.ref.length === 0; }
