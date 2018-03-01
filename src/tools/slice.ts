@@ -13,9 +13,10 @@ import { PlainTextSpanNode } from '../AST/TextSpanNode/PlainTextSpanNode';
 export type BadSliceStrategy = (
     | 'throw'
     | 'fill'
-    | 'truncate'
+    | 'omit'
 );
-export function sliceByPlainTextBytes(root: RootNode, start: number, stop?: number, strategy: BadSliceStrategy = 'throw'): RootNode {
+
+export function sliceByPlainTextOffset(root: RootNode, start: number, stop?: number, strategy: BadSliceStrategy = 'throw'): RootNode {
     let start_safe: number;
     let stop_safe: number;
     const rc = root.children.createCursor();
@@ -45,25 +46,43 @@ export function sliceByPlainTextBytes(root: RootNode, start: number, stop?: numb
     while (cursorOffset < stop_safe) {
         if (currentSpan.range.start.plainTextOffset >= start_safe) {
             // entire `TextSpanNode` is inside desired range, clone and save it.
-            if (currentSpan.range.stop.plainTextOffset <= stop_safe) {
+            if (currentSpan.range.start.plainTextOffset >= start_safe && currentSpan.range.stop.plainTextOffset <= stop_safe) {
                 nRoot.children.push(currentSpan.clone(nRoot));
                 cursorOffset = currentSpan.range.stop.plainTextOffset;
             } else {
+                // determine from which end of the `TextSpanNode` things will be truncated.
+                const partialDirection = (currentSpan.range.start.plainTextOffset > start_safe) ? 'front' : 'back';
                 // only some `TextChunkNode`s will be included. start collecting them..
                 const included: PlainTextChunkNode[] = [];
                 const chunks = (currentSpan.kind === 'AnsiTextSpanNode') ? currentSpan.plainTextChildren : currentSpan.children;
                 const sc = chunks.createCursor();
                 let currentChunk = sc.current;
-                while (currentChunk.range.stop.plainTextOffset <= stop_safe) {
-                    included.push(currentChunk);
+                let brokenEdgeFound: boolean = false;
+                while (cursorOffset < stop_safe) {
+                    const startInRange = currentChunk.range.start.plainTextOffset >= start_safe;
+                    const stopInRange = currentChunk.range.stop.plainTextOffset <= stop_safe;
+                    if (startInRange && stopInRange) {
+                        included.push(currentChunk);
+                    } else if (startInRange || stopInRange) {
+                        if (strategy === 'throw') {
+                            throw new RangeError(); /// TODO ::: this really needs a better error message
+                        } else if (strategy === 'fill') {
+                            const gap = (
+                                (partialDirection === 'back')
+                                ? currentChunk.range.stop.plainTextOffset - cursorOffset
+                                : currentChunk.range.start.plainTextOffset - cursorOffset
+                            );
+                            included.push(new CharacterNode(undefined, ' '.repeat(gap)));
+                        } else if (strategy === 'omit') {
+                            // noop();
+                        } else {
+                            throw new TypeError();
+                        }
+                    }
                     cursorOffset = currentChunk.range.stop.plainTextOffset;
                     // advance to next chunk if there is one
                     if (sc.canAdvance()) currentChunk = sc.advance();
                     else break;
-                }
-
-                if (cursorOffset !== stop_safe) {
-                    /// TODO ::: handle bad break
                 }
 
                 // construct text of the partial `TextSpanNode` from the included `TextChunkNode`s
@@ -85,12 +104,7 @@ export function sliceByPlainTextBytes(root: RootNode, start: number, stop?: numb
                 nRoot.children.push(nSpan);
             }
         } else {
-            if (currentSpan.range.stop.plainTextOffset > start_safe) {
-                // fontal partial
-                
-            } else {
-                cursorOffset = currentSpan.range.stop.plainTextOffset;
-            }
+            cursorOffset = currentSpan.range.stop.plainTextOffset;
         }
         if (rc.canAdvance()) currentSpan = rc.advance();
         else break;
