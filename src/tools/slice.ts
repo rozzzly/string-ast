@@ -18,7 +18,8 @@ export type BadSliceStrategy = (
 export function sliceByPlainTextBytes(root: RootNode, start: number, stop?: number, strategy: BadSliceStrategy = 'throw'): RootNode {
     let start_safe: number;
     let stop_safe: number;
-    const rightBound = root.children.get(-1).range.stop.plainTextOffset;
+    const rc = root.children.createCursor();
+    const rightBound = rc.last().range.stop.plainTextOffset;
     // allow negative indexes for `start`
     if (start < 0) {
         start_safe = rightBound - start;
@@ -38,62 +39,65 @@ export function sliceByPlainTextBytes(root: RootNode, start: number, stop?: numb
     if (!inRange(0, rightBound, stop_safe)) throw new RangeError();
 
     const nRoot = root.clone();
-    const cursor: { span: number, chunk: number, offset: number } = { span: 0, chunk: 0, offset: 0 };
+    let cursorOffset: number = 0;
 
-    while (cursor.offset < stop_safe) {
-        if (cursor.span >= root.children.length) throw new RangeError();
-        else {
-            const currentSpan = root.children.get(cursor.span);
-            if (cursor.offset >= currentSpan.range.start.plainTextOffset) {
-                // entire span is inside desired range, clone and save it.
-                if (cursor.offset <= currentSpan.range.stop.plainTextOffset) {
-                    nRoot.children.push(currentSpan.clone(nRoot));
-                    cursor.offset = currentSpan.range.stop.plainTextOffset;
-                    cursor.span++;
-                } else {
-                    const included: Children<TextChunkNode> = wrapChildren([]);
-                    const chunks = (currentSpan.kind === 'AnsiTextSpanNode') ? currentSpan.plainTextChildren : currentSpan.children;
-                    let currentChunk = chunks.get(cursor.chunk);
-                    while (cursor.offset < currentChunk.range.stop.plainTextOffset) {
-                        included.push(currentChunk);
-                        cursor.offset += currentChunk.bytes;
-                        // advance to next chunk if there is one
-                        if (cursor.chunk < chunks.length) {
-                            currentChunk = chunks.get(++cursor.chunk);
-                        }
-                    }
-
-                    if (cursor.offset < stop_safe) {
-                        /// TODO ::: handle bad break
-                    }
-
-                    // if current span is a `AnsiTextSpanNode` --> make sure any closing `AnsiEscapeNode`s get copied over
-                    if (currentSpan.kind === 'AnsiTextSpanNode') {
-                        included.unshift(...currentSpan.relatedEscapes.before);
-                        included.push(...currentSpan.relatedEscapes.after);
-                    }
-
-                    /// TODO ::: clone children
-
-                    // create new `TextSpanNode`
-                    const text = included.reduce((reduction, chunk) => (chunk.kind === 'AnsiEscapeNode') ? reduction : reduction + chunk.value, '');
-                    let nSpan: TextSpanNode = (currentSpan.kind === 'PlainTextSpanNode') ? (
-                        new PlainTextSpanNode(nRoot, text, included as Children<PlainTextChunkNode>)
-                    ) : (
-                        new AnsiTextSpanNode(nRoot, text, currentSpan.style.clone(), included)
-                    );
-
-                    // append new `TextSpanNode`
-                    nRoot.children.push(nSpan);
+    let currentSpan = rc.current;
+    while (cursorOffset < stop_safe) {
+        if (currentSpan.range.start.plainTextOffset >= start_safe) {
+            // entire `TextSpanNode` is inside desired range, clone and save it.
+            if (currentSpan.range.stop.plainTextOffset <= stop_safe) {
+                nRoot.children.push(currentSpan.clone(nRoot));
+                cursorOffset = currentSpan.range.stop.plainTextOffset;
+            } else {
+                // only some `TextChunkNode`s will be included. start collecting them..
+                const included: PlainTextChunkNode[] = [];
+                const chunks = (currentSpan.kind === 'AnsiTextSpanNode') ? currentSpan.plainTextChildren : currentSpan.children;
+                const sc = chunks.createCursor();
+                let currentChunk = sc.current;
+                while (currentChunk.range.stop.plainTextOffset <= stop_safe) {
+                    included.push(currentChunk);
+                    cursorOffset = currentChunk.range.stop.plainTextOffset;
+                    // advance to next chunk if there is one
+                    if (sc.canAdvance()) currentChunk = sc.advance();
+                    else break;
                 }
-            }
-            cursor.span++;
-        }
 
+                if (cursorOffset !== stop_safe) {
+                    /// TODO ::: handle bad break
+                }
+
+                // construct text of the partial `TextSpanNode` from the included `TextChunkNode`s
+                const text = included.reduce((reduction, chunk) => reduction + chunk.value, '');
+
+                // create new `TextSpanNode`
+                let nSpan: TextSpanNode = (currentSpan.kind === 'PlainTextSpanNode') ? (
+                    new PlainTextSpanNode(nRoot, text, included)
+                ) : (
+                    new AnsiTextSpanNode(nRoot, text, currentSpan.style.clone(), [
+                        // make sure any opening/closing `AnsiEscapeNode`s get copied over
+                        ...currentSpan.relatedEscapes.before,
+                        ...included,
+                        ...currentSpan.relatedEscapes.after
+                    ])
+                );
+
+                // append new `TextSpanNode`
+                nRoot.children.push(nSpan);
+            }
+        } else {
+            if (currentSpan.range.stop.plainTextOffset > start_safe) {
+                // fontal partial
+                
+            } else {
+                cursorOffset = currentSpan.range.stop.plainTextOffset;
+            }
+        }
+        if (rc.canAdvance()) currentSpan = rc.advance();
+        else break;
     }
 
     // rebuild ranges
     nRoot.calculateRange();
 
-    return root;
+    return nRoot;
 }

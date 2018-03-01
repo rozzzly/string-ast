@@ -28,10 +28,15 @@ export abstract class BaseTextSpanNode<K extends TextSpanNodeKind> extends Compu
     protected memoized: Memoizer<TextSpanMemoizedData, this>;
 
     public constructor(parent: RootNode, text: string);
-    public constructor(parent: RootNode, text: string, children: Children<TextChunkNode>);
-    public constructor(parent: RootNode, text: string, children?: Children<TextChunkNode>) {
+    public constructor(parent: RootNode, text: string, children: TextChunkNode[]);
+    public constructor(parent: RootNode, text: string, children?: TextChunkNode[]) {
         super();
-        this.children = children ? children : wrapChildren(splitText(text, this as any));
+        if (children) {
+            // @ts-ignore
+            this.children = wrapChildren(children.map(child => child.clone(this)));
+        } else {
+            this.children = wrapChildren(splitText(text, this as any));
+        }
         this.parent = parent;
         this.text = text;
         this.memoized.patch(computers);

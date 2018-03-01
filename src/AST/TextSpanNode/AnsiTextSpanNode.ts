@@ -55,8 +55,8 @@ export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind> imp
     protected memoized: Memoizer<AnsiTextSpanMemoizedData, this>;
 
     public constructor(parent: RootNode, text: string, style: AnsiStyle);
-    public constructor(parent: RootNode, text: string, style: AnsiStyle, children: Children<TextChunkNode>);
-    public constructor(parent: RootNode, text: string, style: AnsiStyle, children?: Children<TextChunkNode>) {
+    public constructor(parent: RootNode, text: string, style: AnsiStyle, children: TextChunkNode[]);
+    public constructor(parent: RootNode, text: string, style: AnsiStyle, children?: TextChunkNode[]) {
         super(parent, text, children);
         this.style = style;
         this.memoized.patch(computers);
