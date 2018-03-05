@@ -44,7 +44,7 @@ export function sliceByPlainTextOffset(root: RootNode, start: number, stop?: num
 
     let currentSpan = rc.current;
     while (cursorOffset < stop_safe) {
-        if (currentSpan.range.start.plainTextOffset >= start_safe) {
+        if (currentSpan.range.start.plainTextOffset <= start_safe) {
             // entire `TextSpanNode` is inside desired range, clone and save it.
             if (currentSpan.range.start.plainTextOffset >= start_safe && currentSpan.range.stop.plainTextOffset <= stop_safe) {
                 nRoot.children.push(currentSpan.clone(nRoot));
