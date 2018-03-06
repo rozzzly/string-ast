@@ -15,7 +15,7 @@ export type BadSliceStrategy = 'throw' | 'fill' | 'omit';
 
 
 
-type ChildrenInRange<K extends Node> = { node: K; partial: false | 'front' | 'back' | 'both' }[];
+type ChildrenInRange<K extends Node> = { node: K; type: 'full' | 'frontPartial' | 'backPartial' | 'doublePartial' }[];
 
 function getChildrenInRange<K extends Node>(
     children: Children<K>,
@@ -28,51 +28,74 @@ function getChildrenInRange<K extends Node>(
 
     const nc = children.createCursor();
     let current = nc.current;
-    while (getStop(current.range) <= rightBound) {
+    while (true) {
         const nodeStart = getStart(current.range);
         const nodeStop = getStop(current.range);
-        const overlap = inRange(leftBound, nodeStop, nodeStart) || inRange(rightBound, nodeStop, );
 
-        if (overlap) {
-            const leftInRange = leftBound <= nodeStart;
-            const rightInRange = rightBound >= nodeStop;
+        // --------A--------B--------
+        // --X--Y--|--------|-------- none (advance)
+        // --X-----Y--------|-------- none (advance)
+        // --X-----|--Y-----|-------- backPartial
+        // --X-----|--------Y-------- full
+        // --X-----|--------|--Y----- full
+        // --------X--Y-----|-------- backPartial
+        // --------X--------Y-------- full
+        // --------X--------|--Y----- full
+        // --------|--X--Y--|-------- doublePartial
+        // --------|--X-----Y-------- frontPartial
+        // --------|--X-----|--Y----- frontPartial
+        // --------|--------X--Y----- none (break)
+        // --------|--------|--X--Y-- none (break)
 
-            if (leftInRange) {
-                // ----#------------#-------
-                // ----X------------|------- leftBound === nodeStart
-                // -X--|------------|------- leftBound < nodeStart
-                if (rightInRange) {
-                    // ----#------------#-------
-                    // ----X------------X------- leftBound === nodeStart && rightBound === nodeStop
-                    // ----X------------|--X---- leftBound === nodeStart && rightBound > nodeStop
-                    // -X--|------------X------- leftBound < nodeStart && rightBound === nodeStop
-                    // -X--|------------|--X---- leftBound < nodeStart && rightBound > nodeStop
-                    result.push({ node: current, partial: false });
-                } else if (inRange(nodeStart, nodeStop, rightBound))  {
-                    // ----#------------#-------
-                    // ----X---------X--|------- leftBound === nodeStart && rightBound < nodeStop
-                    // -X--|---------X--|------- leftBound < nodeStart && rightBound < nodeStop
-                    result.push({ node: current, partial: 'back' });
+        if (leftBound < nodeStart) {
+            if (rightBound > nodeStart) {
+                if (rightBound < nodeStop) {
+                    // --------A--------B--------
+                    // --X-----|--Y-----|-------- backPartial
+                    result.push({ node: current, type: 'backPartial' });
                 } else {
-                    // skip
+                    // --------A--------B--------
+                    // --X-----|--------Y-------- full
+                    // --X-----|--------|--Y----- full
+                    result.push({ node: current, type: 'full' });
                 }
-            } else if (leftBound <= nodeStop) {
-                // ----#------------#-------
-                // ----|--X---------|------- leftBound > nodeStart
-                if (rightInRange) {
-                    // ----#------------#-------
-                    // ----|--X---------X------- leftBound > nodeStart && rightBound === nodeStop
-                    // ----|--X---------|--X---- leftBound > nodeStart && rightBound > nodeStop
-                    result.push({node: current, partial: 'front' });
+            } else {
+                // --------A--------B--------
+                // --X--Y--|--------|-------- none (advance)
+                // --X-----Y--------|-------- none (advance)
+                if (nc.canAdvance()) current = nc.advance();
+                else break;
+            }
+        } else if (leftBound === nodeStart) {
+            if (rightBound < nodeStop) {
+                // --------A--------B--------
+                // --------X--Y-----|-------- backPartial
+                result.push({ node: current, type: 'backPartial' });
+            } else {
+                // --------A--------B--------
+                // --------X--------Y-------- full
+                // --------X--------|--Y----- full
+                result.push({ node: current, type: 'full' });
+            }
+        } else {
+            if (leftBound < nodeStop) {
+                if (rightBound < nodeStop) {
+                    // --------A--------B--------
+                    // --------|--X--Y--|-------- doublePartial
+                    result.push({ node: current, type: 'doublePartial' });
                 } else {
-                    // ----#------------#-------
-                    // ----|--X------X--|------- leftBound > nodeStart && rightBound < nodeStop
-                    result.push({node: current, partial: 'both' });
+                    // --------A--------B--------
+                    // --------|--X-----|--Y----- frontPartial
+                    // --------|--X-----Y-------- frontPartial
+                    result.push({ node: current, type: 'frontPartial' });
                 }
+            } else {
+                // --------A--------B--------
+                // --------|--------X--Y----- none (break)
+                // --------|--------|--X--Y-- none (break)
+                break;
             }
         }
-        if (nc.canAdvance()) current = nc.advance();
-        else break;
     }
 
     return result;
@@ -148,11 +171,11 @@ export function sliceByPlainTextOffset(
                     if (strategy === 'throw') {
                         throw new RangeError(); /// TODO ::: this really needs a better error message
                     } else if (strategy === 'fill') {
-                        const gap = ((partialDirection === 'back')
-                            ? currentChunk.range.stop.plainTextOffset - cursorOffset
-                            : currentChunk.range.start.plainTextOffset - cursorOffset
-                        );
-                        included.push(new CharacterNode(undefined, ' '.repeat(gap)));
+                        // const gap = ((partialDirection === 'back')
+                        //     ? currentChunk.range.stop.plainTextOffset - cursorOffset
+                        //     : currentChunk.range.start.plainTextOffset - cursorOffset
+                        // );
+                        // included.push(new CharacterNode(undefined, ' '.repeat(gap)));
                     } else if (strategy === 'omit') {
                         // noop();
                     } else {
