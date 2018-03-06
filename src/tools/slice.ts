@@ -15,57 +15,62 @@ export type BadSliceStrategy = 'throw' | 'fill' | 'omit';
 
 
 
-type NodesInRange<K extends Node> = { node: K; partial: false | 'front' | 'back' | 'both' }[];
+type ChildrenInRange<K extends Node> = { node: K; partial: false | 'front' | 'back' | 'both' }[];
 
-function getNodesInRange<K extends Node>(
-    nodes: Children<K>,
+function getChildrenInRange<K extends Node>(
+    children: Children<K>,
     leftBound: number,
     rightBound: number,
     getStart: (range: Range) => number = (range: Range) => range.start.plainTextOffset,
     getStop: (range: Range) => number = (range: Range) => range.stop.plainTextOffset
-):  NodesInRange<K> {
-    const result: NodesInRange<K> = [];
+):  ChildrenInRange<K> {
+    const result: ChildrenInRange<K> = [];
 
-    const nc = nodes.createCursor();
+    const nc = children.createCursor();
     let current = nc.current;
     while (getStop(current.range) <= rightBound) {
         const nodeStart = getStart(current.range);
         const nodeStop = getStop(current.range);
-        const leftInRange = leftBound <= nodeStart;
-        const rightInRange = rightBound >= nodeStop;
+        const overlap = inRange(leftBound, nodeStop, nodeStart) || inRange(rightBound, nodeStop, );
 
-        if (leftInRange) {
-            // ----#------------#-------
-            // ----X------------|------- leftBound === nodeStart
-            // -X--|------------|------- leftBound < nodeStart
-            if (rightInRange) {
+        if (overlap) {
+            const leftInRange = leftBound <= nodeStart;
+            const rightInRange = rightBound >= nodeStop;
+
+            if (leftInRange) {
                 // ----#------------#-------
-                // ----X------------X------- leftBound === nodeStart && rightBound === nodeStop
-                // ----X------------|--X---- leftBound === nodeStart && rightBound > nodeStop
-                // -X--|------------X------- leftBound < nodeStart && rightBound === nodeStop
-                // -X--|------------|--X---- leftBound < nodeStart && rightBound > nodeStop
-                result.push({ node: current, partial: false });
-            } else  {
+                // ----X------------|------- leftBound === nodeStart
+                // -X--|------------|------- leftBound < nodeStart
+                if (rightInRange) {
+                    // ----#------------#-------
+                    // ----X------------X------- leftBound === nodeStart && rightBound === nodeStop
+                    // ----X------------|--X---- leftBound === nodeStart && rightBound > nodeStop
+                    // -X--|------------X------- leftBound < nodeStart && rightBound === nodeStop
+                    // -X--|------------|--X---- leftBound < nodeStart && rightBound > nodeStop
+                    result.push({ node: current, partial: false });
+                } else if (inRange(nodeStart, nodeStop, rightBound))  {
+                    // ----#------------#-------
+                    // ----X---------X--|------- leftBound === nodeStart && rightBound < nodeStop
+                    // -X--|---------X--|------- leftBound < nodeStart && rightBound < nodeStop
+                    result.push({ node: current, partial: 'back' });
+                } else {
+                    // skip
+                }
+            } else if (leftBound <= nodeStop) {
                 // ----#------------#-------
-                // ----X---------X--|------- leftBound === nodeStart && rightBound < nodeStop
-                // -X--|---------X--|------- leftBound < nodeStart && rightBound < nodeStop
-                result.push({ node: current, partial: 'back' });
-            }
-        } else {
-            // ----#------------#-------
-            // ----|--X---------|------- leftBound > nodeStart
-            if (rightInRange) {
-                // ----#------------#-------
-                // ----|--X---------X------- leftBound > nodeStart && rightBound === nodeStop
-                // ----|--X---------|--X---- leftBound > nodeStart && rightBound > nodeStop
-                result.push({node: current, partial: 'front' });
-            } else {
-                // ----#------------#-------
-                // ----|--X------X--|------- leftBound > nodeStart && rightBound < nodeStop
-                result.push({node: current, partial: 'both' });
+                // ----|--X---------|------- leftBound > nodeStart
+                if (rightInRange) {
+                    // ----#------------#-------
+                    // ----|--X---------X------- leftBound > nodeStart && rightBound === nodeStop
+                    // ----|--X---------|--X---- leftBound > nodeStart && rightBound > nodeStop
+                    result.push({node: current, partial: 'front' });
+                } else {
+                    // ----#------------#-------
+                    // ----|--X------X--|------- leftBound > nodeStart && rightBound < nodeStop
+                    result.push({node: current, partial: 'both' });
+                }
             }
         }
-
         if (nc.canAdvance()) current = nc.advance();
         else break;
     }
