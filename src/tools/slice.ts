@@ -14,12 +14,13 @@ import { Node } from '../AST/index';
 export type BadSliceStrategy = 'throw' | 'fill' | 'omit';
 
 
-
-type ChildrenInRange<K extends Node> = { node: K; type: 'full' | 'frontPartial' | 'backPartial' | 'doublePartial' }[];
+type ChildrenInRange<K extends Node> = { node: K; type: 'full' | 'backPartial' | 'rightPartial' | 'doublePartial' }[];
 
 function getChildrenInRange<K extends Node>(
     children: Children<K>,
+    /** @param {number} leftBound inclusive left bound */
     leftBound: number,
+    /** @param {number} rightBound exclusive left bound */
     rightBound: number,
     getStart: (range: Range) => number = (range: Range) => range.start.plainTextOffset,
     getStop: (range: Range) => number = (range: Range) => range.stop.plainTextOffset
@@ -35,15 +36,15 @@ function getChildrenInRange<K extends Node>(
         // --------A--------B--------
         // --X--Y--|--------|-------- none (advance)
         // --X-----Y--------|-------- none (advance)
-        // --X-----|--Y-----|-------- backPartial
+        // --X-----|--Y-----|-------- rightPartial
         // --X-----|--------Y-------- full
         // --X-----|--------|--Y----- full
-        // --------X--Y-----|-------- backPartial
+        // --------X--Y-----|-------- rightPartial
         // --------X--------Y-------- full
         // --------X--------|--Y----- full
         // --------|--X--Y--|-------- doublePartial
-        // --------|--X-----Y-------- frontPartial
-        // --------|--X-----|--Y----- frontPartial
+        // --------|--X-----Y-------- backPartial
+        // --------|--X-----|--Y----- backPartial
         // --------|--------X--Y----- none (break)
         // --------|--------|--X--Y-- none (break)
 
@@ -51,8 +52,8 @@ function getChildrenInRange<K extends Node>(
             if (rightBound > nodeStart) {
                 if (rightBound < nodeStop) {
                     // --------A--------B--------
-                    // --X-----|--Y-----|-------- backPartial
-                    result.push({ node: current, type: 'backPartial' });
+                    // --X-----|--Y-----|-------- rightPartial
+                    result.push({ node: current, type: 'rightPartial' });
                 } else {
                     // --------A--------B--------
                     // --X-----|--------Y-------- full
@@ -69,8 +70,8 @@ function getChildrenInRange<K extends Node>(
         } else if (leftBound === nodeStart) {
             if (rightBound < nodeStop) {
                 // --------A--------B--------
-                // --------X--Y-----|-------- backPartial
-                result.push({ node: current, type: 'backPartial' });
+                // --------X--Y-----|-------- rightPartial
+                result.push({ node: current, type: 'rightPartial' });
             } else {
                 // --------A--------B--------
                 // --------X--------Y-------- full
@@ -85,9 +86,9 @@ function getChildrenInRange<K extends Node>(
                     result.push({ node: current, type: 'doublePartial' });
                 } else {
                     // --------A--------B--------
-                    // --------|--X-----|--Y----- frontPartial
-                    // --------|--X-----Y-------- frontPartial
-                    result.push({ node: current, type: 'frontPartial' });
+                    // --------|--X-----|--Y----- backPartial
+                    // --------|--X-----Y-------- backPartial
+                    result.push({ node: current, type: 'backPartial' });
                 }
             } else {
                 // --------A--------B--------
@@ -133,6 +134,19 @@ export function sliceByPlainTextOffset(
     const nRoot = root.clone([]);
     let cursorOffset: number = 0;
 
+    const spans = getChildrenInRange(root.children, start_safe, stop_safe);
+    spans.forEach(span => {
+        if (span.type === 'full') {
+            nRoot.children.push(span.node.clone());
+        } else {
+            const included: PlainTextChunkNode[] = [];
+            const chunks = ((currentSpan.kind === 'AnsiTextSpanNode')
+                ? currentSpan.plainTextChildren
+                : currentSpan.children
+            );
+
+        }
+    })
     //
     //
     // ------|------------------|------------------------------
@@ -152,8 +166,8 @@ export function sliceByPlainTextOffset(
             cursorOffset = currentSpan.range.stop.plainTextOffset;
         } else if (csrStart > start_safe || csrStop < stop_safe) {
             // determine from which end of the `TextSpanNode` things will be truncated.
-            const frontPartial: boolean = csrStart > start_safe;
-            const backPartial: boolean = csrStop < stop_safe;
+            const backPartial: boolean = csrStart > start_safe;
+            const rightPartial: boolean = csrStop < stop_safe;
                         // only some `TextChunkNode`s will be included. start collecting them..
             const included: PlainTextChunkNode[] = [];
             const chunks = ((currentSpan.kind === 'AnsiTextSpanNode')

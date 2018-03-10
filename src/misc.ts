@@ -64,3 +64,82 @@ export function atMost<T>(levels: T[]): (value: T, minimum: T) => boolean {
         else return (valIndex <= minIndex);
     };
 }
+
+export type StrUnion<
+    A extends string = undefined,
+    B extends string = undefined,
+    C extends string = undefined,
+    D extends string = undefined,
+    E extends string = undefined,
+    F extends string = undefined
+> = Exclude<(
+    | A
+    | B
+    | C
+    | D
+    | E
+    | F
+), undefined>;
+
+
+export type ClassConstructor<I, C extends { new (): I } = { new(): I}> = C;
+
+
+export type ApproachMap<K extends string> = {
+    [N in K]: ClassConstructor<Strategy<N>>;
+};
+
+export class Scenario<K extends string, M extends ApproachMap<K> = ApproachMap<K>> {
+    public name: string;
+    public approaches: M;
+    private approachNames: K[];
+    public constructor(name: string, approaches: M) {
+        this.name = name;
+        this.approaches = approaches;
+        this.approachNames = Object.keys(this.approaches) as K[];
+        this.approachNames.forEach(app => {
+            this.approaches[app].prototype.scenario = this;
+        })
+    }
+
+    public inflate<N extends K>(order: N): M[N];
+    public inflate<N extends K, I extends M[N]>(order: I): I;
+    public inflate<N extends K, I extends M[N] = M[N]>(order: I | N): I | M[N] {
+        const names: K[] = Object.keys(this.approaches) as A[];
+        if (typeof order === 'string') {
+            // use default instance
+            const inst: Strategy<A, this, N> = new this.approaches[order]();
+            if (inst) return inst;
+            else throw new TypeError();
+        } else {
+            if (names.includes(order.name)) { // approach with that name exists
+                return order; // use given instance anyway
+            } else throw TypeError();
+        }
+    }
+}
+
+export abstract class Strategy<N extends String> {
+    public options: {};
+    public abstract name: N;
+    protected scenario: Scenario<any, any>;
+
+    public constructor(opts: {} = {}) {
+        this.options = opts;
+    }
+}
+
+class SomePlanOfAction extends Strategy<'SomePlanOfAction'> {
+    public name: 'SomePlanOfAction' = 'SomePlanOfAction';
+    public constructor(arg: number = 1) {
+        super();
+    }
+}
+
+const foo = new Scenario<'SomePlanOfAction', {
+    SomePlanOfAction: SomePlanOfAction
+}>('derp', {
+    SomePlanOfAction: SomePlanOfAction
+});
+
+const lol = new foo.approaches.SomePlanOfAction(5);
