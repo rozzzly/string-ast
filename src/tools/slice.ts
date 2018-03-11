@@ -137,16 +137,27 @@ export function sliceByPlainTextOffset(
     const spans = getChildrenInRange(root.children, start_safe, stop_safe);
     spans.forEach(span => {
         if (span.type === 'full') {
-            nRoot.children.push(span.node.clone());
+            nRoot.children.push(span.node.clone(nRoot));
         } else {
             const included: PlainTextChunkNode[] = [];
-            const chunks = ((currentSpan.kind === 'AnsiTextSpanNode')
-                ? currentSpan.plainTextChildren
-                : currentSpan.children
-            );
+            const chunks = getChildrenInRange((
+                (currentSpan.kind === 'AnsiTextSpanNode'
+                    ? currentSpan.plainTextChildren
+                    : currentSpan.children
+                )
+            ), start_safe, stop_safe);
+            const includesPartial = chunks.reduce((reduction, chunk) => (
+                reduction || chunk.type !== 'full'
+            ), false);
+
+            if (includesPartial) {
+
+            } else {
+                const nSpan = 
+            }
 
         }
-    })
+    });
     //
     //
     // ------|------------------|------------------------------

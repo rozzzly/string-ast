@@ -27,7 +27,7 @@ export function scenario<P extends Proposals>(name: string, plans: P): Scenario<
     return {
         plans: plans,
         name: name,
-        enact(value: any) { // type signature
+        enact(value: any) { // type signature defined in `Scenario` interface
             if (typeof value === 'string') {
                 if (aliases.includes(value)) {
                     return new plans[value]();

@@ -25,12 +25,7 @@ export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNorma
     public constructor(raw: string, normalized: string, children: TextSpanNode[] = []) {
         super();
         this.range = undefined;
-        this.raw = raw;
-        if (children) {
-            this.children = wrapChildren(children.map(child => child.clone(this)));
-        } else {
-            this.children = wrapChildren([]);
-        }
+        this.children = wrapChildren(children.map(child => child.clone(this)));
         this.normalized = normalized;
     }
 
@@ -64,7 +59,7 @@ export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNorma
 
     public clone(): RootNode;
     public clone(children: TextSpanNode[]): RootNode;
-    public clone(children?: TextSpanNode[]): RootNode {
+    public clone(children: TextSpanNode[] = undefined): RootNode {
         const result = new RootNode(this.raw, this.normalized, children ? children : this.children);
         result.derivedFrom = this;
         return result;
