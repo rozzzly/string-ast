@@ -81,65 +81,124 @@ export type StrUnion<
     | F
 ), undefined>;
 
-
-export type ClassConstructor<I, C extends { new (): I } = { new(): I}> = C;
-
-
-export type ApproachMap<K extends string> = {
-    [N in K]: ClassConstructor<Strategy<N>>;
-};
-
-export class Scenario<K extends string, M extends ApproachMap<K> = ApproachMap<K>> {
-    public name: string;
-    public approaches: M;
-    private approachNames: K[];
-    public constructor(name: string, approaches: M) {
-        this.name = name;
-        this.approaches = approaches;
-        this.approachNames = Object.keys(this.approaches) as K[];
-        this.approachNames.forEach(app => {
-            this.approaches[app].prototype.scenario = this;
-        })
+class Bar {
+    public static sBar: string = 'false';
+    public constructor(name: string) {
+        console.log(name);
     }
+    public die(): void {
+        // noop
+    }
+}
+class Foo<A = 'LOL'> {
+    public a: A;
+    public static sFoo: boolean = false;
+    constructor(a: A) {
+        this.a = a;
+    }
+    public meth(): boolean {
+        return true;
+    }
+}
 
-    public inflate<N extends K>(order: N): M[N];
-    public inflate<N extends K, I extends M[N]>(order: I): I;
-    public inflate<N extends K, I extends M[N] = M[N]>(order: I | N): I | M[N] {
-        const names: K[] = Object.keys(this.approaches) as A[];
-        if (typeof order === 'string') {
-            // use default instance
-            const inst: Strategy<A, this, N> = new this.approaches[order]();
-            if (inst) return inst;
-            else throw new TypeError();
-        } else {
-            if (names.includes(order.name)) { // approach with that name exists
-                return order; // use given instance anyway
-            } else throw TypeError();
+export type Constructor<I = any> = new (...args: any[]) => I;
+export type Instance<C> = C extends new (...args: any[]) => infer I ? I : never;
+
+
+
+export interface Proposals {
+    [name: string]: Constructor;
+}
+export interface Scenario<P extends Proposals> {
+    name: string;
+    plans: P;
+    enact<K extends keyof P, I extends Instance<P[K]>>(value: I): I;
+    enact<K extends keyof P>(value: K): Instance<P[K]>;
+}
+
+export type Implementation<S> = (
+    (S extends Scenario<infer P> // extract Proposals
+        ? (
+            | keyof P
+            | Instance<P[keyof P]>
+        )
+        : never
+    )
+);
+
+export function scenario<P extends Proposals>(name: string, plans: P): Scenario<P> {
+    const aliases = Object.keys(plans);
+    return {
+        plans: plans,
+        name: name,
+        enact(value: any) { // type signature
+            if (typeof value === 'string') {
+                if (aliases.includes(value)) {
+                    return new plans[value]();
+                } else {
+                    throw new TypeError();
+                }
+            } else {
+                // we can probably save some time by checking things with matching names
+                const className = value.constructor.name;
+                if (aliases.includes(className)) {
+                    const ClassConstructor = plans[className];
+                    if (value instanceof ClassConstructor) {
+                        return value;
+                    }
+                }
+                // check to see if its an instance of _any_ of the predefined constructors
+                for (let alias of aliases) {
+                    const ClassConstructor = plans[alias];
+                    if (value instanceof ClassConstructor) {
+                        return value;
+                    }
+                }
+
+                // we were not given an instance of one of the predefined constructors
+                throw new TypeError();
+            }
         }
-    }
+    };
 }
 
-export abstract class Strategy<N extends String> {
-    public options: {};
-    public abstract name: N;
-    protected scenario: Scenario<any, any>;
-
-    public constructor(opts: {} = {}) {
-        this.options = opts;
-    }
-}
-
-class SomePlanOfAction extends Strategy<'SomePlanOfAction'> {
-    public name: 'SomePlanOfAction' = 'SomePlanOfAction';
-    public constructor(arg: number = 1) {
-        super();
-    }
-}
-
-const foo = new Scenario<'SomePlanOfAction', {
-    SomePlanOfAction: SomePlanOfAction
-}>('derp', {
-    SomePlanOfAction: SomePlanOfAction
+const testScenario = scenario('foo', {
+    Foo, Bar
 });
 
-const lol = new foo.approaches.SomePlanOfAction(5);
+
+class Foo2 extends testScenario.plans.Foo<'lol'> {
+    constructor(name: string) {
+        super('lol');
+        console.log(name);
+    }
+    public live(): this {
+        return this;
+    }
+}
+
+
+type CustomImplementation = Implementation<typeof testScenario>;
+function acceptsCustomImplementation(impl: CustomImplementation): void {
+    // noop
+}
+
+acceptsCustomImplementation('Foo');
+///// PASS (OK) ==> one of the defined keys
+acceptsCustomImplementation('Bar');
+///// PASS (OK) ==> one of the defined keys
+acceptsCustomImplementation('RandomValue');
+///// FAILS (OK) ==> not one of the defined keys, nor instance of defined constructor
+acceptsCustomImplementation(new Date());
+///// FAILS (OK) ==> not one of the defined keys, nor instance of defined constructor
+acceptsCustomImplementation(new Bar('Kevin'));
+///// PASS (OK) ==> instance of one of the defined constructors
+acceptsCustomImplementation(new Bar());
+///// FAILS (OK) ==> constructor constraint preserved
+acceptsCustomImplementation(new Foo2('robert'));
+// acceptsCustomImplementation(new Foo2());
+///// FAILS (OK) ==> constructor constraint preserved
+
+
+//herp.enact('Foo').
+testScenario.enact(new Foo2('robert')).live().
