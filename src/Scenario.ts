@@ -1,25 +1,37 @@
 export type Constructor<I = any> = new (...args: any[]) => I;
-export type Instance<C> = C extends new (...args: any[]) => infer I ? I : never;
+export type Instance<C extends Constructor> = C extends new (...args: any[]) => infer I ? I : never;
 
-
+export type Deconstruct<U, I> = U extends new (...args: any[]) => I  ? U : never;
 
 export type DiscriminateUnion<
     Union,
     TagKey extends keyof Union,
     TagValue extends Union[TagKey]
 > = (
-    Union extends Record<TagKey, TagValue>
+    (Union extends Record<TagKey, TagValue>
         ? Union
         : never
+    )
 );
 
-type lookup<P extends Constructor<{ name: string }>[], N extends Instance<P[number]>['name']> = DiscriminateUnion<Instance<P[number]>, 'name', N>;
+export type lookup<P extends Constructor<{ name: string }>[], N extends Instance<P[number]>['name']> = DiscriminateUnion<Instance<P[number]>, 'name', N>;
+
+export type Proposals2<C extends  Constructor<{ name: string }>> = {
+    [N in Instance<C>['name']]: Deconstruct<C, DiscriminateUnion<Instance<C>, 'name', N>>;
+};
 
 export interface Proposals {
     [name: string]: Constructor<{ name: string }>;
 }
 
+type test = Proposals2<[Foo, Bar]>;
 
+export interface Scenario2<C extends Constructor<{ name: string }>> {
+    name: string;
+    plans:  Proposals2<C>;
+    enact<K extends keyof Proposals2<C>, I extends Instance<Proposals2<C>[K]>>(value: I): I;
+    enact<K extends keyof Proposals2<C>>(value: K): Instance<Proposals2<C>[K]>;
+}
 export interface Scenario<P extends Proposals> {
     name: string;
     plans: P;
@@ -60,15 +72,21 @@ const loo = hello([Foo, Bar]);
 
 
 
-export function scenario<P extends Proposals>(name: string, plans: P): Scenario<P> {
-    const aliases = Object.keys(plans);
+export function scenario<C extends Constructor<{ name: string }>>(name: string, plans: C[]): Scenario2<C> {
+    const aliases: (keyof Proposals2<C>)[] = [];
+    const planMap = Proposals.
+    
+    plans.reduce((reduction, plan) => ({
+        ...reduction,
+        [new plan().name]: plan
+    }), [{}) as (Proposals2<C>);
     return {
-        plans: plans,
+        plans: planMap,
         name: name,
         enact(value: any) { // type signature defined in `Scenario` interface
             if (typeof value === 'string') {
                 if (aliases.includes(value)) {
-                    return new plans[value]();
+                    return new planMap[value as keyof Proposals2<C>]();
                 } else {
                     throw new TypeError();
                 }
@@ -95,3 +113,7 @@ export function scenario<P extends Proposals>(name: string, plans: P): Scenario<
         }
     };
 }
+
+const derp = scenario('hi', [Foo, Bar]);
+
+const nDerp = new derp.plans.Bar();
