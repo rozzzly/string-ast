@@ -151,10 +151,9 @@ export function sliceByPlainTextOffset(
             ), false);
 
             if (includesPartial) {
-
-            } else {
-                const nSpan = 
+                /// TODO ::: Handle strategy
             }
+            const nSpan = new
 
         }
     });

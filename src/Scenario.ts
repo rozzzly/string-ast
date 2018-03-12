@@ -1,9 +1,24 @@
 export type Constructor<I = any> = new (...args: any[]) => I;
 export type Instance<C> = C extends new (...args: any[]) => infer I ? I : never;
 
+
+
+export type DiscriminateUnion<
+    Union,
+    TagKey extends keyof Union,
+    TagValue extends Union[TagKey]
+> = (
+    Union extends Record<TagKey, TagValue>
+        ? Union
+        : never
+);
+
+type lookup<P extends Constructor<{ name: string }>[], N extends Instance<P[number]>['name']> = DiscriminateUnion<Instance<P[number]>, 'name', N>;
+
 export interface Proposals {
-    [name: string]: Constructor;
+    [name: string]: Constructor<{ name: string }>;
 }
+
 
 export interface Scenario<P extends Proposals> {
     name: string;
@@ -22,6 +37,29 @@ export type Implementation<S> = (
     )
 );
 
+class Foo {
+    public name: 'Foo' = 'Foo';
+}
+class Bar {
+    public name: 'Bar' = 'Bar';
+}
+const p = { Foo, Bar };
+const s = scenario('', p);
+s.enact(new Foo());
+
+
+
+type die = lookup<[typeof Foo, typeof Bar], 'Foo'>;
+
+function hello<P extends Constructor<{ name: string }>[], N extends Instance<P[number]>['name']>(z: P, i: N):   {
+    return undefined;
+}
+
+
+const loo = hello([Foo, Bar]);
+
+
+
 export function scenario<P extends Proposals>(name: string, plans: P): Scenario<P> {
     const aliases = Object.keys(plans);
     return {
@@ -38,7 +76,7 @@ export function scenario<P extends Proposals>(name: string, plans: P): Scenario<
                 // we can probably save some time by checking things with matching names
                 const className = value.constructor.name;
                 if (aliases.includes(className)) {
-                    const ClassConstructor = plans[className];
+                    const ClassConstructor = plans[className as keyof P];
                     if (value instanceof ClassConstructor) {
                         return value;
                     }
