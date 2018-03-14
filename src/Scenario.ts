@@ -14,72 +14,67 @@ export type DiscriminateUnion<
     )
 );
 
-export type Proposals<C extends Constructor<{ name: string }>> = {
-    [N in Instance<C>['name']]: Deconstruct<C, DiscriminateUnion<Instance<C>, 'name', N>>;
+export type Proposal = Constructor<{ name: string }>;
+export type ProposalName<C extends Proposal> = Instance<C>['name'];
+
+export type SubmittedProposals<C extends Proposal, K extends ProposalName<C> = ProposalName<C>> = {
+    [N in K]: Deconstruct<C, DiscriminateUnion<Instance<C>, 'name', N>>;
 };
 
-export type Scenario<C extends Constructor<{ name: string }>> = (
-    (
-        Proposals<C>
-    ) & {
-        enact<K extends keyof Proposals<C>, I extends Instance<Proposals<C>[K]>>(value: I): I;
-        enact<K extends keyof Proposals<C>>(value: K): Instance<Proposals<C>[K]>;
-    }
+export type Enact<C extends Proposal> = {
+    enact<K extends keyof SubmittedProposals<C>, I extends Instance<SubmittedProposals<C>[K]>>(plan: I): I;
+    enact<K extends keyof SubmittedProposals<C>>(proposalName: K): Instance<SubmittedProposals<C>[K]>;
+};
+
+export type Scenario<C extends Proposal> = (
+    & SubmittedProposals<C>
+    & Enact<C>
 );
 
-
-export type Implementation<S> = (
-    (S extends Scenario<infer P> // extract Proposals
-        ? (
-            | Instance<P>['name']
-            | Instance<P>
-        )
+export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
+export type ExtractProposals<S> = (
+    (S extends Scenario<infer C>
+        ? C
         : never
     )
 );
 
-class Foo {
-    public static something: boolean = false;
-    public name: 'Foo' = 'Foo';
-    constructor(v: number) {
-        console.log(v);
-    }
-}
-class Bar {
-    public name: 'Bar' = 'Bar';
-}
+export type Implementation<S extends Scenario<Constructor>, C extends ExtractProposals<S> = ExtractProposals<S>> = (
+   | Instance<C>
+   | ProposalName<C>
+);
 
-export function scenario<C extends Constructor<{ name: string }>>(plans: C[]): Scenario<C> {
-    const aliases: (keyof Proposals<C>)[] = [];
-    const planMap: any = {};
+export function scenario<C extends Proposal>(proposals: C[]): Scenario<C> {
+    const aliases: (ProposalName<C>)[] = [];
+    const submittedProposals: any = {};
 
-    plans.forEach(PlanConstructor => {
-        const planName = (new PlanConstructor()).name;
-        if (typeof planName !== 'string') {
-            throw TypeError('A plan must have a (string) name!!');
-        } else if (planName === '') {
-            throw TypeError('A Plan must have a name!!');
-        } else if (planName === 'enact') {
-            throw TypeError('A Plan cannot be named `enact`!');
-        } else if (aliases.includes(planName)) {
-            throw TypeError('A Plan with this name already exists!');
+    proposals.forEach(PlanConstructor => {
+        const name = (new PlanConstructor()).name;
+        if (typeof name !== 'string') { // also catches undefined props which are... well `undefined`
+            throw TypeError('A Proposal must have a (string) name!!');
+        } else if (name === '') {
+            throw TypeError('A Proposal must have a name!!');
+        } else if (name === 'enact') {
+            throw TypeError('A Proposal cannot be named `enact`!');
+        } else if (aliases.includes(name)) {
+            throw TypeError('A Proposal with this name already exists!');
         } else {
-            planMap[planName] = PlanConstructor;
-            aliases.push(planName);
+            submittedProposals[name] = PlanConstructor;
+            aliases.push(name);
         }
     });
     return {
-        ...planMap,
+        ...submittedProposals,
         enact(value: any) { // type signature defined in `Scenario` interface
             if (typeof value === 'string' && value !== 'enact') {
-                const ClassConstructor = planMap[value];
-                if (ClassConstructor) {
-                    return new ClassConstructor();
+                const PlanConstructor = submittedProposals[value];
+                if (PlanConstructor) {
+                    return new PlanConstructor();
                 } else {
                     throw new TypeError('Unregistered Plan name');
                 }
             } else {
-                if (aliases.includes(value.name) && value instanceof planMap[value.name]) {
+                if (aliases.includes(value.name) && value instanceof submittedProposals[value.name]) {
                     return value;
                 } else {
                     // we were not given an instance of one of the predefined constructors
