@@ -10,6 +10,8 @@ import { AnsiTextSpanNode } from '../AST/TextSpanNode/AnsiTextSpanNode';
 import { TextSpanNode } from '../AST/TextSpanNode';
 import { PlainTextSpanNode } from '../AST/TextSpanNode/PlainTextSpanNode';
 import { Node } from '../AST/index';
+import { Implementation } from '../Scenario';
+import { badSlice, Throw } from './BadSliceScenario';
 
 export type BadSliceStrategy = 'throw' | 'fill' | 'omit';
 
@@ -105,8 +107,19 @@ function getChildrenInRange<K extends Node>(
 export function sliceByPlainTextOffset(
     root: RootNode,
     start: number,
+    stop?: number
+): RootNode;
+export function sliceByPlainTextOffset(
+    root: RootNode,
+    start: number,
     stop?: number,
-    strategy: BadSliceStrategy = 'throw'
+    strategy: Implementation<typeof badSlice>
+): RootNode;
+export function sliceByPlainTextOffset(
+    root: RootNode,
+    start: number,
+    stop?: number,
+    strategy: Implementation<typeof badSlice> = 'Throw'
 ): RootNode {
     let start_safe: number;
     let stop_safe: number;
@@ -151,7 +164,12 @@ export function sliceByPlainTextOffset(
             ), false);
 
             if (includesPartial) {
-                /// TODO ::: Handle strategy
+                const stratImpl = badSlice.enact(strategy);
+                if (stratImpl.name === 'Fill') {
+                    /// TODO ::: fill
+                } else {
+                    stratImpl.thrower(undefined);
+                }
             }
             const nSpan = new
 

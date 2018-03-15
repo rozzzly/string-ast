@@ -1,7 +1,8 @@
 export type Constructor<I = any> = new (...args: any[]) => I;
 export type Instance<C extends Constructor> = C extends new (...args: any[]) => infer I ? I : never;
-
 export type Deconstruct<C, I> = C extends new (...args: any[]) => I  ? C : never;
+
+export type Unionize<T extends { [I: string]: any }> = T[keyof T];
 
 export type DiscriminateUnion<
     Union,
@@ -22,10 +23,9 @@ export type SubmittedProposals<P extends Constructor<Proposal>> = {
 };
 
 export type Enact<P extends Constructor<Proposal>> = {
-    enact(): undefined;
-    enact(value: undefined): undefined;
     enact<K extends keyof SubmittedProposals<P>, I extends Instance<SubmittedProposals<P>[K]>>(plan: I): I;
-    enact<K extends keyof SubmittedProposals<P>>(proposalName: K): Instance<SubmittedProposals<P>[K]>;
+    enact<K extends ProposalName<P>>(proposalName: K): Instance<SubmittedProposals<P>[K]>;
+    enact(either: ProposalName<P> | Instance<P>): Instance<P>
 };
 
 export type Scenario<P extends Constructor<{ name: string }>> = (

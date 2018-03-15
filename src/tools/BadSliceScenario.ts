@@ -38,10 +38,10 @@ export type BadSliceFiller = (
 
 export class Fill {
     public name: 'Fill' = 'Fill';
-    protected filler: BadSliceFiller = ' ';
+    protected filler: BadSliceFiller;
     public constructor();
     public constructor(filler: BadSliceFiller);
-    public constructor(filler: BadSliceFiller = '') {
+    public constructor(filler: BadSliceFiller = ' ') {
         if (typeof filler === 'string') {
             if (widthOf(filler) === 1) {
                 this.filler = filler;
@@ -61,7 +61,7 @@ export class Fill {
             if (widthOf(str) === data.gapWidth) {
                 return str;
             } else {
-                throw new Error('`BadSliceFiller`s which are strings must have a width of 1.');
+                throw new Error('`BadSliceFiller`s must fill the gap.');
             }
         }
     }
