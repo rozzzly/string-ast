@@ -22,6 +22,8 @@ export type SubmittedProposals<P extends Constructor<Proposal>> = {
 };
 
 export type Enact<P extends Constructor<Proposal>> = {
+    enact(): undefined;
+    enact(value: undefined): undefined;
     enact<K extends keyof SubmittedProposals<P>, I extends Instance<SubmittedProposals<P>[K]>>(plan: I): I;
     enact<K extends keyof SubmittedProposals<P>>(proposalName: K): Instance<SubmittedProposals<P>[K]>;
 };

@@ -36,8 +36,6 @@ export type BadSliceFiller = (
     | ((data: BadSliceData) => string)
 );
 
-const shit2: SubmittedProposals<typeof Throw> = { Throw };
-
 export class Fill {
     public name: 'Fill' = 'Fill';
     protected filler: BadSliceFiller = ' ';
@@ -68,16 +66,8 @@ export class Fill {
         }
     }
 }
-export class Throw2 extends Throw {
-    public static s1: boolean;
-    public s2: number;
-}
+
 export const badSlice = scenario([
     Throw,
     Fill
 ]);
-type derp = SubmittedProposals<typeof Throw | typeof Fill>;
-
-
-type shit = ExtractProposals<typeof badSlice>;
-type wtf = Implementation<typeof badSlice>;
