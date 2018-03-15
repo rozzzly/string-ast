@@ -1,7 +1,7 @@
 export type Constructor<I = any> = new (...args: any[]) => I;
 export type Instance<C extends Constructor> = C extends new (...args: any[]) => infer I ? I : never;
 
-export type Deconstruct<U, I> = U extends new (...args: any[]) => I  ? U : never;
+export type Deconstruct<C, I> = C extends new (...args: any[]) => I  ? C : never;
 
 export type DiscriminateUnion<
     Union,
@@ -14,38 +14,35 @@ export type DiscriminateUnion<
     )
 );
 
-export type Proposal = Constructor<{ name: string }>;
-export type ProposalName<C extends Proposal> = Instance<C>['name'];
+export type Proposal = { name: string };
+export type ProposalName<P extends Constructor<Proposal>> = Instance<P>['name'];
 
-export type SubmittedProposals<C extends Proposal, K extends ProposalName<C> = ProposalName<C>> = {
-    [N in K]: Deconstruct<C, DiscriminateUnion<Instance<C>, 'name', N>>;
+export type SubmittedProposals<P extends Constructor<Proposal>> = {
+    [N in ProposalName<P>]: Deconstruct<P, DiscriminateUnion<Instance<P>, 'name', N>>;
 };
 
-export type Enact<C extends Proposal> = {
-    enact<K extends keyof SubmittedProposals<C>, I extends Instance<SubmittedProposals<C>[K]>>(plan: I): I;
-    enact<K extends keyof SubmittedProposals<C>>(proposalName: K): Instance<SubmittedProposals<C>[K]>;
+export type Enact<P extends Constructor<Proposal>> = {
+    enact<K extends keyof SubmittedProposals<P>, I extends Instance<SubmittedProposals<P>[K]>>(plan: I): I;
+    enact<K extends keyof SubmittedProposals<P>>(proposalName: K): Instance<SubmittedProposals<P>[K]>;
 };
 
-export type Scenario<C extends Proposal> = (
-    & SubmittedProposals<C>
-    & Enact<C>
+export type Scenario<P extends Constructor<{ name: string }>> = (
+    & SubmittedProposals<P>
+    & Enact<P>
 );
 
 export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
-export type ExtractProposals<S> = (
-    (S extends Scenario<infer C>
-        ? C
-        : never
-    )
+export type ExtractProposals<S extends Scenario<any>> = (
+    Omit<S, 'enact'>
 );
 
-export type Implementation<S extends Scenario<Constructor>, C extends ExtractProposals<S> = ExtractProposals<S>> = (
-   | Instance<C>
-   | ProposalName<C>
+export type Implementation<S extends Scenario<any>, E extends ExtractProposals<S> = ExtractProposals<S>> = (
+   | Instance<E[keyof E]>
+   | ProposalName<E[keyof E]>
 );
 
-export function scenario<C extends Proposal>(proposals: C[]): Scenario<C> {
-    const aliases: (ProposalName<C>)[] = [];
+export function scenario<P extends Constructor<Proposal>>(proposals: P[]): Scenario<P> {
+    const aliases: (ProposalName<P>)[] = [];
     const submittedProposals: any = {};
 
     proposals.forEach(PlanConstructor => {

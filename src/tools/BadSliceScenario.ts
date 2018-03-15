@@ -1,4 +1,4 @@
-import { Implementation, scenario, Scenario, ExtractProposals } from '../Scenario';
+import { Implementation, scenario, Scenario, ExtractProposals, Proposal, SubmittedProposals } from '../Scenario';
 import { RootNode } from '../AST/RootNode';
 import { TextChunkNode } from '../AST/TextChunkNode/index';
 import { widthOf } from '../width';
@@ -36,6 +36,8 @@ export type BadSliceFiller = (
     | ((data: BadSliceData) => string)
 );
 
+const shit2: SubmittedProposals<typeof Throw> = { Throw };
+
 export class Fill {
     public name: 'Fill' = 'Fill';
     protected filler: BadSliceFiller = ' ';
@@ -66,10 +68,16 @@ export class Fill {
         }
     }
 }
-
+export class Throw2 extends Throw {
+    public static s1: boolean;
+    public s2: number;
+}
 export const badSlice = scenario([
     Throw,
     Fill
 ]);
+type derp = SubmittedProposals<typeof Throw | typeof Fill>;
+
+
 type shit = ExtractProposals<typeof badSlice>;
-const derp: Implementation<typeof badSlice> = undefined as any;
+type wtf = Implementation<typeof badSlice>;
