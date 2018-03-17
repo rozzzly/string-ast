@@ -15,9 +15,15 @@ export interface RelatedAnsiEscapes {
     before: AnsiEscapeNode[];
     after: AnsiEscapeNode[];
 }
+
+export interface RelatedAnsiEscapesResult extends RelatedAnsiEscapes {
+    clone(): RelatedAnsiEscapes;
+    clone(parent: AnsiTextSpanNode): RelatedAnsiEscapes;
+}
+
 export interface AnsiTextSpanMemoizedData extends TextSpanMemoizedData {
     raw: string;
-    relatedEscapes: RelatedAnsiEscapes;
+    relatedEscapes: RelatedAnsiEscapesResult;
     plainTextChildren: Children<PlainTextChunkNode>;
 }
 
@@ -44,7 +50,14 @@ const computers = {
                 textReached = true;
             }
         });
-        return { before, after };
+        return {
+            before,
+            after,
+            clone: (parent: AnsiTextSpanNode = undefined) => ({
+                before: before.map(node => node.clone(parent)),
+                after: before.map(node => node.clone(parent))
+            })
+        };
     }
 };
 
@@ -55,14 +68,14 @@ export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind> imp
     protected memoized: Memoizer<AnsiTextSpanMemoizedData, this>;
 
     public constructor(parent: RootNode, text: string, style: AnsiStyle);
-    public constructor(parent: RootNode, text: string, style: AnsiStyle, children: TextChunkNode[]);
-    public constructor(parent: RootNode, text: string, style: AnsiStyle, children?: TextChunkNode[]) {
-        super(parent, text, children);
+    public constructor(parent: RootNode, children: TextChunkNode[], style: AnsiStyle);
+    public constructor(parent: RootNode, content: string | TextChunkNode[], style: AnsiStyle) {
+        super(parent, content as any);
         this.style = style;
         this.memoized.patch(computers);
     }
 
-    public get relatedEscapes(): RelatedAnsiEscapes  {
+    public get relatedEscapes(): RelatedAnsiEscapesResult  {
         return this.memoized.getMemoizedData('relatedEscapes');
     }
 
@@ -75,9 +88,11 @@ export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind> imp
     }
 
     public clone(): AnsiTextSpanNode;
-    public clone(overrideParent: RootNode): AnsiTextSpanNode;
-    public clone(overrideParent?: RootNode): AnsiTextSpanNode {
-        const result = new AnsiTextSpanNode(overrideParent || this.parent, this.text, this.style.clone());
+    public clone(parent: RootNode): AnsiTextSpanNode;
+    public clone(parent: RootNode, text: string): AnsiTextSpanNode;
+    public clone(parent: RootNode, children: TextChunkNode[]): AnsiTextSpanNode;
+    public clone(parent: RootNode = this.parent, content: string | TextChunkNode[] = this.children): AnsiTextSpanNode {
+        const result = new AnsiTextSpanNode(parent, content as any, this.style.clone());
         result.derivedFrom = this;
         return result;
     }

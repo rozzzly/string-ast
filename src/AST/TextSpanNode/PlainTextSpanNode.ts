@@ -17,16 +17,18 @@ export class PlainTextSpanNode extends BaseTextSpanNode<PlainTextSpanNodeKind> i
     public raw: string;
 
     public constructor(parent: RootNode, text: string);
-    public constructor(parent: RootNode, text: string, children: PlainTextChunkNode[]);
-    public constructor(parent: RootNode, text: string, children?: PlainTextChunkNode[]) {
-        super(parent, text, children);
-        this.raw = text;
+    public constructor(parent: RootNode, children: PlainTextChunkNode[]);
+    public constructor(parent: RootNode, content: string | PlainTextChunkNode[]) {
+        super(parent, content as any);
+        this.raw = typeof content === 'string' ? content : 'UNCOMPUTED';
     }
 
     public clone(): PlainTextSpanNode;
-    public clone(overrideParent: RootNode): PlainTextSpanNode;
-    public clone(overrideParent?: RootNode): PlainTextSpanNode {
-        const result = new PlainTextSpanNode(overrideParent || this.parent, this.raw);
+    public clone(parent: RootNode): PlainTextSpanNode;
+    public clone(parent: RootNode, text: string): PlainTextSpanNode;
+    public clone(parent: RootNode, children: PlainTextChunkNode[]): PlainTextSpanNode;
+    public clone(parent: RootNode = this.parent, content: string | PlainTextChunkNode[] = this.children): PlainTextSpanNode {
+        const result = new PlainTextSpanNode(parent, content as any);
         result.derivedFrom = this;
         return result;
     }

@@ -1,14 +1,17 @@
 import { Implementation, scenario, Scenario, ExtractProposals, Proposal, SubmittedProposals } from '../Scenario';
 import { RootNode } from '../AST/RootNode';
-import { TextChunkNode } from '../AST/TextChunkNode/index';
-import { widthOf } from '../width';
+import { TextChunkNode, TextChunkNodeKind } from '../AST/TextChunkNode/index';
+import { widthOf, plainTextLengthOf } from '../width';
+import { ChildInRange } from './slice';
 
 export interface BadSliceData {
     start: number;
     stop: number;
-    gapWidth: number;
-    partialSpan: TextChunkNode;
-    partialChunk: TextChunkNode;
+    gapLeft: number;
+    gapRight: number;
+    slicedBy: 'plainTextOffset' | 'width';
+    partialSpan: ChildInRange<TextChunkNode>;
+    partialChunk: ChildInRange<TextChunkNode>;
     originalRoot: RootNode;
 }
 
@@ -31,35 +34,50 @@ export class Throw {
 
 }
 
+export interface BadSliceFill {
+    left?: string;
+    right?: string;
+}
+
 export type BadSliceFiller = (
     | string
-    | ((data: BadSliceData) => string)
+    | ((data: BadSliceData) => BadSliceFill)
 );
 
+
 export class Fill {
+    public static defaultFiller: BadSliceFiller = ' ';
     public name: 'Fill' = 'Fill';
     protected filler: BadSliceFiller;
     public constructor();
     public constructor(filler: BadSliceFiller);
-    public constructor(filler: BadSliceFiller = ' ') {
+    public constructor(filler: BadSliceFiller = Fill.defaultFiller) {
         if (typeof filler === 'string') {
-            if (widthOf(filler) === 1) {
+            if (widthOf(filler) === 1 && plainTextLengthOf(filler) === 1) {
                 this.filler = filler;
             } else {
-                throw new Error('`BadSliceFiller`s which are strings must have a width of 1.');
+                throw new Error('`BadSliceFiller`s which are strings must have a length and a width of 1.');
             }
         } else {
             this.filler = filler;
         }
     }
 
-    public fill(data: BadSliceData): string {
+    public fill(slice: BadSliceData): BadSliceFill {
         if (typeof this.filler === 'string') {
-            return this.filler.repeat(data.gapWidth);
+            return {
+                left: this.filler.repeat(slice.gapLeft),
+                right: this.filler.repeat(slice.gapRight)
+            };
         } else {
-            const str = this.filler(data);
-            if (widthOf(str) === data.gapWidth) {
-                return str;
+            const fill = this.filler(slice);
+            // test function depends on what we are slicing by
+            const test: (str: string) => number = (slice.slicedBy === 'width') ? widthOf : plainTextLengthOf;
+            // rest of the logic is the same
+            const leftOk = !slice.gapLeft && !fill.left || test(fill.left) === slice.gapLeft;
+            const rightOk = !slice.gapRight && !fill.right || test(fill.right) === slice.gapRight;
+            if (leftOk && rightOk) {
+                return fill;
             } else {
                 throw new Error('`BadSliceFiller`s must fill the gap.');
             }

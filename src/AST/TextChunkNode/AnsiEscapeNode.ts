@@ -18,9 +18,9 @@ export class AnsiEscapeNode extends BaseTextChunkNode<AnsiEscapeNodeKind> implem
     }
 
     public clone(): AnsiEscapeNode;
-    public clone(overrideParent: AnsiTextSpanNode): AnsiEscapeNode;
-    public clone(overrideParent?: AnsiTextSpanNode) {
-        const result = new AnsiEscapeNode(overrideParent || this.parent, this.params);
+    public clone(parent: AnsiTextSpanNode): AnsiEscapeNode;
+    public clone(parent: AnsiTextSpanNode = this.parent) {
+        const result = new AnsiEscapeNode(parent, this.params);
         result.derivedFrom = this;
         return result;
     }

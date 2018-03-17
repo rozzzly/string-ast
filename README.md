@@ -20,3 +20,9 @@ import chalk from 'chalk';
 const str = `normal ${chalk.bold('bold')} ${chalk.red(`red ${chalk.bold('both')}`)}`;
 console.log(parse(str));
 ```
+
+
+
+##### Prior Art & Resources Used
+https://mathiasbynens.be/notes/javascript-unicode
+https://github.com/sallar/stringz

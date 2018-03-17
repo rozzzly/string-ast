@@ -95,7 +95,7 @@ export function splitText(str: string, parent: TextSpanNode): TextChunkNode[] {
     passQueue = [];
     resultQueue.forEach(item => {
         if (typeof item === 'string') {
-            const chunks: CharacterNode[]  = Array.from(item).map(character => new CharacterNode(parent, character));
+            const chunks: CharacterNode[] = Array.from(item).map(character => new CharacterNode(parent, character));
             passQueue.push(...chunks);
         } else {
             passQueue.push(item);

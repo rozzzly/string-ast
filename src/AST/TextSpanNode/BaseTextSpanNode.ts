@@ -28,18 +28,19 @@ export abstract class BaseTextSpanNode<K extends TextSpanNodeKind> extends Compu
     protected memoized: Memoizer<TextSpanMemoizedData, this>;
 
     public constructor(parent: RootNode, text: string);
-    public constructor(parent: RootNode, text: string, children: TextChunkNode[]);
-    public constructor(parent: RootNode, text: string, children?: TextChunkNode[]) {
+    public constructor(parent: RootNode, children: TextChunkNode[]);
+    public constructor(parent: RootNode, content: string | TextChunkNode[]) {
         super();
-        if (children) {
+        this.parent = parent;
+        this.memoized.patch(computers);
+        if (typeof content === 'string') {
+            this.children = wrapChildren(splitText(content, this as any));
+            this.text = content;
+        } else {
             // @ts-ignore
             this.children = wrapChildren(children.map(child => child.clone(this)));
-        } else {
-            this.children = wrapChildren(splitText(text, this as any));
+            this.text = 'UNCOMPUTED';
         }
-        this.parent = parent;
-        this.text = text;
-        this.memoized.patch(computers);
     }
 
     public calculateRange(parentOffset: LocationData) {
@@ -47,7 +48,7 @@ export abstract class BaseTextSpanNode<K extends TextSpanNodeKind> extends Compu
             new Location({
                 ...parentOffset
             }),
-             undefined
+            undefined
         );
         let line: number = 0;
         let column: number = 0;
@@ -100,7 +101,9 @@ export abstract class BaseTextSpanNode<K extends TextSpanNodeKind> extends Compu
     }
 
     public abstract clone(): BaseTextSpanNode<K>;
-    public abstract clone(overrideParent: RootNode): BaseTextSpanNode<K>;
+    public abstract clone(parent: RootNode): BaseTextSpanNode<K>;
+    public abstract clone(parent: RootNode, text: string): BaseTextSpanNode<K>;
+    public abstract clone(parent: RootNode, children: TextChunkNode[]): BaseTextSpanNode<K>;
 
     public toString() {
         return this.raw;

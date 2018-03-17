@@ -7,16 +7,18 @@ import { Range } from '../AST/Range';
 import { inRange } from '../misc';
 import { TextChunkNode, PlainTextChunkNode } from '../AST/TextChunkNode';
 import { AnsiTextSpanNode } from '../AST/TextSpanNode/AnsiTextSpanNode';
-import { TextSpanNode } from '../AST/TextSpanNode';
+import { TextSpanNode, TextSpanNodeKind } from '../AST/TextSpanNode';
 import { PlainTextSpanNode } from '../AST/TextSpanNode/PlainTextSpanNode';
 import { Node } from '../AST/index';
 import { Implementation } from '../Scenario';
-import { badSlice, Throw } from './BadSliceScenario';
+import { badSlice, Throw, BadSliceData } from './BadSliceScenario';
+import { BaseTextSpanNode } from '../AST/TextSpanNode/BaseTextSpanNode';
 
 export type BadSliceStrategy = 'throw' | 'fill' | 'omit';
 
 
-type ChildrenInRange<K extends Node> = { node: K; type: 'full' | 'backPartial' | 'rightPartial' | 'doublePartial' }[];
+export type ChildInRange<K extends Node> = { node: K; type: 'full' | 'leftPartial' | 'rightPartial' | 'doublePartial' };
+export type ChildrenInRange<K extends Node> = ChildInRange<K>[];
 
 function getChildrenInRange<K extends Node>(
     children: Children<K>,
@@ -31,75 +33,81 @@ function getChildrenInRange<K extends Node>(
 
     const nc = children.createCursor();
     let current = nc.current;
-    while (true) {
+    do {
         const nodeStart = getStart(current.range);
         const nodeStop = getStop(current.range);
 
         // --------A--------B--------
-        // --X--Y--|--------|-------- none (advance)
-        // --X-----Y--------|-------- none (advance)
-        // --X-----|--Y-----|-------- rightPartial
-        // --X-----|--------Y-------- full
-        // --X-----|--------|--Y----- full
-        // --------X--Y-----|-------- rightPartial
-        // --------X--------Y-------- full
-        // --------X--------|--Y----- full
-        // --------|--X--Y--|-------- doublePartial
-        // --------|--X-----Y-------- backPartial
-        // --------|--X-----|--Y----- backPartial
-        // --------|--------X--Y----- none (break)
-        // --------|--------|--X--Y-- none (break)
+        // --X--Y--|--------|-------- none (break)
+        // --X-----Y--------|-------- none (break)
+        // --X-----|--Y-----|-------- rightPartial (break)
+        // --X-----|--------Y-------- full (break)
+        // --X-----|--------|--Y----- full (next will be a rightPartial)
+        // --------X--Y-----|-------- rightPartial (break)
+        // --------X--------Y-------- full (break)
+        // --------X--------|--Y----- full (next child will be a rightPartial)
+        // --------|--X--Y--|-------- doublePartial (break)
+        // --------|--X-----Y-------- leftPartial (break)
+        // --------|--X-----|--Y----- leftPartial (next will be a rightPartial)
+        // --------|--------X--Y----- none (advance)
+        // --------|--------|--X--Y-- none (advance)
 
         if (leftBound < nodeStart) {
             if (rightBound > nodeStart) {
                 if (rightBound < nodeStop) {
                     // --------A--------B--------
-                    // --X-----|--Y-----|-------- rightPartial
+                    // --X-----|--Y-----|-------- rightPartial (break)
                     result.push({ node: current, type: 'rightPartial' });
                 } else {
                     // --------A--------B--------
-                    // --X-----|--------Y-------- full
-                    // --X-----|--------|--Y----- full
+                    // --X-----|--------Y-------- full (break)
+                    // --X-----|--------|--Y----- full (next will be a rightPartial)
                     result.push({ node: current, type: 'full' });
+                    if (rightBound === nodeStop) break;
                 }
             } else {
                 // --------A--------B--------
-                // --X--Y--|--------|-------- none (advance)
-                // --X-----Y--------|-------- none (advance)
-                if (nc.canAdvance()) current = nc.advance();
-                else break;
+                // --X--Y--|--------|-------- none (break)
+                // --X-----Y--------|-------- none (break)
+                break;
             }
         } else if (leftBound === nodeStart) {
             if (rightBound < nodeStop) {
                 // --------A--------B--------
-                // --------X--Y-----|-------- rightPartial
+                // --------X--Y-----|-------- rightPartial (break)
                 result.push({ node: current, type: 'rightPartial' });
+                break;
             } else {
                 // --------A--------B--------
-                // --------X--------Y-------- full
-                // --------X--------|--Y----- full
+                // --------X--------Y-------- full (break)
+                // --------X--------|--Y----- full (next will be a rightPartial)
                 result.push({ node: current, type: 'full' });
+                if (rightBound === nodeStop) break;
+                else continue;
             }
         } else {
             if (leftBound < nodeStop) {
                 if (rightBound < nodeStop) {
                     // --------A--------B--------
-                    // --------|--X--Y--|-------- doublePartial
+                    // --------|--X--Y--|-------- doublePartial (break)
                     result.push({ node: current, type: 'doublePartial' });
+                    break;
                 } else {
                     // --------A--------B--------
-                    // --------|--X-----|--Y----- backPartial
-                    // --------|--X-----Y-------- backPartial
-                    result.push({ node: current, type: 'backPartial' });
+                    // --------|--X-----|--Y----- leftPartial (next will be a rightPartial)
+                    // --------|--X-----Y-------- leftPartial (break)
+                    result.push({ node: current, type: 'leftPartial' });
+                    if (rightBound === nodeStop) break;
+                    else continue;
                 }
             } else {
                 // --------A--------B--------
                 // --------|--------X--Y----- none (break)
                 // --------|--------|--X--Y-- none (break)
-                break;
+                continue;
             }
         }
-    }
+    } while ((current = nc.advance(true)) !== null);
 
     return result;
 }
@@ -112,7 +120,7 @@ export function sliceByPlainTextOffset(
 export function sliceByPlainTextOffset(
     root: RootNode,
     start: number,
-    stop?: number,
+    stop: number,
     strategy: Implementation<typeof badSlice>
 ): RootNode;
 export function sliceByPlainTextOffset(
@@ -148,15 +156,15 @@ export function sliceByPlainTextOffset(
     let cursorOffset: number = 0;
 
     const spans = getChildrenInRange(root.children, start_safe, stop_safe);
-    spans.forEach(span => {
-        if (span.type === 'full') {
-            nRoot.children.push(span.node.clone(nRoot));
+    spans.forEach(({ type: spanType, node: span }) => {
+        if (spanType === 'full') {
+            nRoot.children.push(span.clone(nRoot));
         } else {
             const included: PlainTextChunkNode[] = [];
             const chunks = getChildrenInRange((
-                (currentSpan.kind === 'AnsiTextSpanNode'
-                    ? currentSpan.plainTextChildren
-                    : currentSpan.children
+                (span.kind === 'AnsiTextSpanNode'
+                    ? span.plainTextChildren
+                    : span.children
                 )
             ), start_safe, stop_safe);
             const includesPartial = chunks.reduce((reduction, chunk) => (
@@ -164,102 +172,39 @@ export function sliceByPlainTextOffset(
             ), false);
 
             if (includesPartial) {
+                const data: BadSliceData = {
+                    partialSpan: span,
+                    originalRoot: root,
+                    start: start_safe,
+                    stop: stop_safe,
+                    slicedBy: 'plainTextOffset'
+                }
                 const stratImpl = badSlice.enact(strategy);
                 if (stratImpl.name === 'Fill') {
-                    /// TODO ::: fill
+                    const fill = stratImpl.fill(data);
                 } else {
-                    stratImpl.thrower(undefined);
+                    stratImpl.thrower(data);
+                }
+            } else {
+                const nSpan  = (span as BaseTextSpanNode<TextSpanNodeKind>).clone(nRoot, []);
+                chunks.forEach(({ type: chunkType, node: chunk }) => {
+                    nSpan.children.push(chunk.clone(nSpan as any));
+                });
+                if (nSpan.kind === 'AnsiTextSpanNode')  {
+                    const escapeClones = (nSpan as AnsiTextSpanNode).relatedEscapes.clone(nSpan as AnsiTextSpanNode);
+                    nSpan.children.unshift(...escapeClones.before);
+                    nSpan.children.push(...escapeClones.after);
                 }
             }
-            const nSpan = new
-
         }
     });
-    //
-    //
-    // ------|------------------|------------------------------
-    // ----------|=======|-------------------------------------
-    // ----------|===================|-------------------------
-    // -----|================|---------------------------------
-    // --|========================================|------------
-    //
-
-    let currentSpan = rc.current;
-    while (cursorOffset < stop_safe) {
-        const csrStart = currentSpan.range.start.plainTextOffset;
-        const csrStop = currentSpan.range.stop.plainTextOffset;
-        // entire `TextSpanNode` is inside desired range, clone and save it.
-        if (csrStart >= start_safe && csrStop <= stop_safe) {
-            nRoot.children.push(currentSpan.clone(nRoot));
-            cursorOffset = currentSpan.range.stop.plainTextOffset;
-        } else if (csrStart > start_safe || csrStop < stop_safe) {
-            // determine from which end of the `TextSpanNode` things will be truncated.
-            const backPartial: boolean = csrStart > start_safe;
-            const rightPartial: boolean = csrStop < stop_safe;
-                        // only some `TextChunkNode`s will be included. start collecting them..
-            const included: PlainTextChunkNode[] = [];
-            const chunks = ((currentSpan.kind === 'AnsiTextSpanNode')
-                ? currentSpan.plainTextChildren
-                : currentSpan.children
-            );
-            const sc = chunks.createCursor();
-            let currentChunk = sc.current;
-            while (cursorOffset < stop_safe) {
-                const startInRange = currentChunk.range.start.plainTextOffset >= start_safe;
-                const stopInRange = currentChunk.range.stop.plainTextOffset <= stop_safe;
-                if (startInRange && stopInRange) {
-                    included.push(currentChunk);
-                } else if (startInRange || stopInRange) {
-                    if (strategy === 'throw') {
-                        throw new RangeError(); /// TODO ::: this really needs a better error message
-                    } else if (strategy === 'fill') {
-                        // const gap = ((partialDirection === 'back')
-                        //     ? currentChunk.range.stop.plainTextOffset - cursorOffset
-                        //     : currentChunk.range.start.plainTextOffset - cursorOffset
-                        // );
-                        // included.push(new CharacterNode(undefined, ' '.repeat(gap)));
-                    } else if (strategy === 'omit') {
-                        // noop();
-                    } else {
-                        throw new TypeError();
-                    }
-                }
-                cursorOffset = currentChunk.range.stop.plainTextOffset;
-                // advance to next chunk if there is one
-                if (sc.canAdvance()) currentChunk = sc.advance();
-                else break;
-            }
-
-            // construct text of the partial `TextSpanNode` from the included `TextChunkNode`s
-            const text = included.reduce((reduction, chunk) => reduction + chunk.value, '');
-
-            // create new `TextSpanNode`
-            let nSpan: TextSpanNode = ((currentSpan.kind === 'PlainTextSpanNode')
-                ? new PlainTextSpanNode(nRoot, text, included)
-                : new AnsiTextSpanNode(nRoot, text, currentSpan.style.clone(), [
-                    // make sure any opening/closing `AnsiEscapeNode`s get copied over
-                    ...currentSpan.relatedEscapes.before,
-                    ...included,
-                    ...currentSpan.relatedEscapes.after
-                ])
-            );
-
-            // append new `TextSpanNode`
-            nRoot.children.push(nSpan);
-        } else {
-            cursorOffset = currentSpan.range.stop.plainTextOffset;
-        }
-        if (rc.canAdvance()) currentSpan = rc.advance();
-        else break;
-    }
 
     // rebuild ranges
     nRoot.calculateRange();
 
     // reset text on `RootNode`
-    const raw = nRoot.children.reduce((reduction, child) => reduction + child.text, '');
-    nRoot.raw = raw;
-    nRoot.normalized = raw;
+    nRoot.raw = nRoot.children.reduce((reduction, child) => reduction + child.raw, '');
+    nRoot.normalized = nRoot.children.reduce((reduction, child) => reduction + child.text, '');
 
     return nRoot;
 }

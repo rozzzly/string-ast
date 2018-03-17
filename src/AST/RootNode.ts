@@ -27,6 +27,7 @@ export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNorma
         this.range = undefined;
         this.children = wrapChildren(children.map(child => child.clone(this)));
         this.normalized = normalized;
+        this.raw = raw;
     }
 
     public [util.inspect.custom](): string {
@@ -60,7 +61,11 @@ export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNorma
     public clone(): RootNode;
     public clone(children: TextSpanNode[]): RootNode;
     public clone(children: TextSpanNode[] = undefined): RootNode {
-        const result = new RootNode(this.raw, this.normalized, children ? children : this.children);
+        const result = new RootNode(
+            children ? 'UNCOMPUTED' : this.raw,
+            children ? 'UNCOMPUTED' : this.normalized,
+            children ? children : this.children
+        );
         result.derivedFrom = this;
         return result;
     }

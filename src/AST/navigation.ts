@@ -30,8 +30,10 @@ export class GenericCursor<E> {
     public get position(): number { return this._position; }
     public set position(value: number) {
         if (inRange(0, this.ref.length - 1, value)) {
+            // using normal index like on an array where `0` is the first element and `this.length - 1` is the last element
             this._position = value;
         } else if (inRange(0 - this.ref.length, -1, value)) {
+            // using negative indexes like `Array.prototype.slice()` where an index of -1 is the last element, -2 the second last, and so on
             this._position = this.ref.length - Math.abs(value);
         } else throw new RangeError();
     }
@@ -43,6 +45,29 @@ export class GenericCursor<E> {
     public get current(): E {
         return this.ref[this._position];
     }
+    /**
+     * Allows me to do this:
+     * ```typescript
+     * type Foo = { iAmAFoo: true };
+     * type Bar = { iAmAFoo: true, iAmAlsoABar: true };
+     * const foo: Foo = undefined;
+     * const bar: Bar = undefined;
+     * const nc = new GenericCursor([ foo, bar ]);
+     * const noCastFailImplicit = nc.current; // infers as Foo (because its a subtype of `Foo | Bar`)
+     * noCastFailImplicit.iAmAlsoABar; // ERROR `iAmAlsoABar` does not exist on type `Foo`
+     * const noCastFailExplicit: Bar = nc.current; // ERROR type `Foo` (because its a subtype of `Foo | Bar`) is not assignable to type `Bar`
+     * console.log(noCastFailExplicit.iAmAlsoABar); // PASS because its explictly a Bar, but we still got an error in the declaration
+     * const castFailImplicit = nc.currentCast(); // infers as `Foo` (because its a subtype of `Foo | Bar`)
+     * console.log(castFailImplicit.iAmAlsoABar); // ERROR `iAmAlsoABar` does not exist on type `Foo`
+     * const castPassImplicit: Bar = nc.currentCast(); // PASS!
+     * console.log(castPassImplicit.iAmAlsoABar); // PASS!
+     * ```
+     * @template T extends E
+     * @returns T cast version of E
+     */
+    public currentCast<T extends E = E>(): T {
+        return this.ref[this._position] as T;
+    }
 
 
     public reset(): E {
@@ -50,7 +75,7 @@ export class GenericCursor<E> {
         return this.ref[0];
     }
 
-    public seek<T extends E = T>(delta: number): T {
+    public seek<T extends E = E>(delta: number): T {
         const nPos = this._position + delta;
         if (inRange(0, this.ref.length - 1, nPos)) {
             this._position = nPos;
@@ -66,19 +91,25 @@ export class GenericCursor<E> {
         return this._position > 0;
     }
 
-    public advance<T extends E = E>(): T {
+    public advance<T extends E = E>(): T | never;
+    public advance<T extends E = E>(safe: boolean): T | null;
+    public advance<T extends E = E>(safe: boolean = false): T | null | never {
         if (this.canAdvance()) {
             return this.ref[++this._position] as T ;
         } else {
-            throw new RangeError();
+            if (safe) return null;
+            else throw new RangeError();
         }
     }
 
-    public reverse<T extends E = E>(): T {
+    public reverse<T extends E = E>(): T | never;
+    public reverse<T extends E = E>(safe: boolean): T | null;
+    public reverse<T extends E = E>(safe: boolean = false): T | null | never {
         if (this.canReverse()) {
             return this.ref[--this._position] as T;
         } else {
-            throw new RangeError();
+            if (safe) return null;
+            else throw new RangeError();
         }
     }
 
@@ -106,7 +137,7 @@ export class GenericCursor<E> {
     }
 
     public peekPrev<T extends E = E>(): T {
-        if (this.canAdvance()) {
+        if (this.canReverse()) {
             return this.ref[this._position - 1] as T;
         } else {
             throw new RangeError();
@@ -217,7 +248,7 @@ export class NodeCursor<N extends Node = Node> extends GenericCursor<N> {
 
     public isNodeOfKind<K extends KindUnion<N>>(kind: K): boolean;
     public isNodeOfKind<K extends KindUnion<N>>(kinds: K[]): boolean;
-    public isNodeOfKind<K extends KindUnion<N>>(kinds: K | K[]): boolean {
+    public isNodeOfKind<K extends KindUnion<N>>(kinds: K | K[], position: number = this.position): boolean {
         const kindsSafe = Array.isArray(kinds) ? kinds : [ kinds ];
         return kindsSafe.includes(this.ref[this._position].kind as K);
     }
@@ -238,8 +269,8 @@ export class NodeCursor<N extends Node = Node> extends GenericCursor<N> {
         return kindsSafe.includes(this.ref[this.position - 1] as any);
     }
 
-    public advanceUntilNodeOfKind<K extends KindUnion<N>>(kind: K): boolean;
-    public advanceUntilNodeOfKind<K extends KindUnion<N>>(kinds: K[]): boolean;
+    public advanceUntilNodeOfKind<K extends KindUnion<N>>(kind: K): Node<K> | undefined;
+    public advanceUntilNodeOfKind<K extends KindUnion<N>>(kinds: K[]): Node<K> | undefined;
     public advanceUntilNodeOfKind<K extends KindUnion<N>>(kinds: K | K[]): Node<K> | undefined {
         const kindsSafe = Array.isArray(kinds) ? kinds : [ kinds ];
         while (this.canAdvance()) {
@@ -248,8 +279,8 @@ export class NodeCursor<N extends Node = Node> extends GenericCursor<N> {
         return undefined;
     }
 
-    public reverseUntilNodeOfKind<K extends KindUnion<N>>(kind: K): boolean;
-    public reverseUntilNodeOfKind<K extends KindUnion<N>>(kinds: K[]): boolean;
+    public reverseUntilNodeOfKind<K extends KindUnion<N>>(kind: K): Node<K> | undefined;
+    public reverseUntilNodeOfKind<K extends KindUnion<N>>(kinds: K[]): Node<K> | undefined;
     public reverseUntilNodeOfKind<K extends KindUnion<N>>(kinds: K | K[]): Node<K> | undefined {
         const kindsSafe = Array.isArray(kinds) ? kinds : [ kinds ];
         while (this.canReverse()) {
@@ -275,3 +306,4 @@ export function wrapChildren<K extends Node>(children: K[] = []): Children<K> {
 
     return result;
 }
+
