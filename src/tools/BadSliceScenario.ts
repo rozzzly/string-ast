@@ -3,6 +3,7 @@ import { RootNode } from '../AST/RootNode';
 import { TextChunkNode, TextChunkNodeKind } from '../AST/TextChunkNode/index';
 import { widthOf, plainTextLengthOf } from '../width';
 import { ChildInRange } from './slice';
+import { TextSpanNode } from '../AST/TextSpanNode/index';
 
 export interface BadSliceData {
     start: number;
@@ -10,7 +11,7 @@ export interface BadSliceData {
     gapLeft: number;
     gapRight: number;
     slicedBy: 'plainTextOffset' | 'width';
-    partialSpan: ChildInRange<TextChunkNode>;
+    partialSpan: ChildInRange<TextSpanNode>;
     partialChunk: ChildInRange<TextChunkNode>;
     originalRoot: RootNode;
 }
@@ -41,7 +42,7 @@ export interface BadSliceFill {
 
 export type BadSliceFiller = (
     | string
-    | ((data: BadSliceData) => BadSliceFill)
+    | ((data: BadSliceData) => BadSliceFill | TextChunkNode)
 );
 
 
@@ -63,7 +64,7 @@ export class Fill {
         }
     }
 
-    public fill(slice: BadSliceData): BadSliceFill {
+    public fill(slice: BadSliceData): TextChunkNode {
         if (typeof this.filler === 'string') {
             return {
                 left: this.filler.repeat(slice.gapLeft),
@@ -82,6 +83,10 @@ export class Fill {
                 throw new Error('`BadSliceFiller`s must fill the gap.');
             }
         }
+    }
+
+    public static fillToChunk(slice: BadSliceData, fill: BadSliceFill): TextChunkNode {
+        const nChunk = 
     }
 }
 

@@ -172,18 +172,35 @@ export function sliceByPlainTextOffset(
             ), false);
 
             if (includesPartial) {
-                const data: BadSliceData = {
-                    partialSpan: span,
-                    originalRoot: root,
-                    start: start_safe,
-                    stop: stop_safe,
-                    slicedBy: 'plainTextOffset'
-                }
-                const stratImpl = badSlice.enact(strategy);
-                if (stratImpl.name === 'Fill') {
-                    const fill = stratImpl.fill(data);
-                } else {
-                    stratImpl.thrower(data);
+
+                const nSpan  = (span as BaseTextSpanNode<TextSpanNodeKind>).clone(nRoot, []);
+                chunks.forEach(({ type: chunkType, node: chunk }) => {
+                    if (chunkType === 'full') {
+                        nSpan.children.push(chunk.clone(nSpan as any));
+                    } else {
+                        const data: BadSliceData = {
+                            partialChunk: { type: spanType, node: chunk},
+                            partialSpan: { type: chunkType, node: span},
+                            originalRoot: root,
+                            start: start_safe,
+                            stop: stop_safe,
+                            gapLeft: span.range.start.plainTextOffset - start_safe,
+                            gapRight: span.range.stop.plainTextOffset - stop_safe,
+                            slicedBy: 'plainTextOffset'
+                        }
+                        const stratImpl = badSlice.enact(strategy);
+                        if (stratImpl.name === 'Throw') {
+                            stratImpl.thrower(data);
+                        } else {
+                            const fill = stratImpl.fill(data);
+                            nSpan.children.push();
+                        }
+                    }
+                });
+                if (nSpan.kind === 'AnsiTextSpanNode')  {
+                    const escapeClones = (nSpan as AnsiTextSpanNode).relatedEscapes.clone(nSpan as AnsiTextSpanNode);
+                    nSpan.children.unshift(...escapeClones.before);
+                    nSpan.children.push(...escapeClones.after);
                 }
             } else {
                 const nSpan  = (span as BaseTextSpanNode<TextSpanNodeKind>).clone(nRoot, []);
