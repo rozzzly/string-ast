@@ -35,14 +35,10 @@ export class Throw {
 
 }
 
-export interface BadSliceFill {
-    left?: string;
-    right?: string;
-}
 
 export type BadSliceFiller = (
     | string
-    | ((data: BadSliceData) => BadSliceFill | TextChunkNode)
+    | ((data: BadSliceData) => string | TextChunkNode)
 );
 
 

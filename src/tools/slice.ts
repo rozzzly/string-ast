@@ -16,8 +16,15 @@ import { BaseTextSpanNode } from '../AST/TextSpanNode/BaseTextSpanNode';
 
 export type BadSliceStrategy = 'throw' | 'fill' | 'omit';
 
-
-export type ChildInRange<K extends Node> = { node: K; type: 'full' | 'leftPartial' | 'rightPartial' | 'doublePartial' };
+export type Gap = (
+    | { left: number; }
+    | { right: number; }
+    | { left: number; right: number; }
+);
+export type ChildInRange<K extends Node> = (
+    | { node: K; type: 'full' }
+    | { node: K; gap: Gap; type: 'leftPartial' | 'rightPartial' | 'doublePartial' }
+);
 export type ChildrenInRange<K extends Node> = ChildInRange<K>[];
 
 function getChildrenInRange<K extends Node>(
@@ -57,7 +64,13 @@ function getChildrenInRange<K extends Node>(
                 if (rightBound < nodeStop) {
                     // --------A--------B--------
                     // --X-----|--Y-----|-------- rightPartial (break)
-                    result.push({ node: current, type: 'rightPartial' });
+                    result.push({
+                        node: current,
+                        type: 'rightPartial',
+                        gap: {
+                            right: nodeStop - rightBound
+                        }
+                    });
                 } else {
                     // --------A--------B--------
                     // --X-----|--------Y-------- full (break)
@@ -75,7 +88,13 @@ function getChildrenInRange<K extends Node>(
             if (rightBound < nodeStop) {
                 // --------A--------B--------
                 // --------X--Y-----|-------- rightPartial (break)
-                result.push({ node: current, type: 'rightPartial' });
+                result.push({
+                    node: current,
+                    type: 'rightPartial',
+                    gap: {
+                        right: nodeStop - rightBound
+                    }
+                });
                 break;
             } else {
                 // --------A--------B--------
@@ -85,18 +104,30 @@ function getChildrenInRange<K extends Node>(
                 if (rightBound === nodeStop) break;
                 else continue;
             }
-        } else {
+        } else { // leftBound > nodeStart
             if (leftBound < nodeStop) {
                 if (rightBound < nodeStop) {
                     // --------A--------B--------
                     // --------|--X--Y--|-------- doublePartial (break)
-                    result.push({ node: current, type: 'doublePartial' });
+                    result.push({
+                        node: current,
+                        type: 'doublePartial', gap: {
+                            left: leftBound - nodeStart,
+                            right: nodeStop - rightBound
+                        }
+                    });
                     break;
                 } else {
                     // --------A--------B--------
                     // --------|--X-----|--Y----- leftPartial (next will be a rightPartial)
                     // --------|--X-----Y-------- leftPartial (break)
-                    result.push({ node: current, type: 'leftPartial' });
+                    result.push({
+                        node: current,
+                        type: 'leftPartial',
+                        gap: {
+                            left: leftBound - nodeStart
+                        }
+                    });
                     if (rightBound === nodeStop) break;
                     else continue;
                 }
