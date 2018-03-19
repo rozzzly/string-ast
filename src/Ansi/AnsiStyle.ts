@@ -166,7 +166,7 @@ export class AnsiStyle implements AnsiStyleData {
     }
 
     public get escapeCodes(): AnsiEscapeCodePair {
-        return this.memoized.getMemoizedData('escapeCodes');
+        return this.memoized.get('escapeCodes');
     }
 
     public get bold(): boolean {

@@ -39,7 +39,11 @@ export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNorma
         throw new Error('Method not implemented.');
     }
 
-    public calculateRange(): void {
+    public compute(): void {
+        this.calculateRange();
+    }
+
+    private calculateRange(): void {
         let line: number = 0;
         let column: number = 0;
         let offset: number = 0;
@@ -62,8 +66,8 @@ export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNorma
     public clone(children: TextSpanNode[]): RootNode;
     public clone(children: TextSpanNode[] = undefined): RootNode {
         const result = new RootNode(
-            children ? 'UNCOMPUTED' : this.raw,
-            children ? 'UNCOMPUTED' : this.normalized,
+            children ? null : this.raw,
+            children ? null : this.normalized,
             children ? children : this.children
         );
         result.derivedFrom = this;

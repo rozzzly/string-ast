@@ -22,13 +22,12 @@ export interface RelatedAnsiEscapesResult extends RelatedAnsiEscapes {
 }
 
 export interface AnsiTextSpanMemoizedData extends TextSpanMemoizedData {
-    raw: string;
     relatedEscapes: RelatedAnsiEscapesResult;
     plainTextChildren: Children<PlainTextChunkNode>;
 }
 
 const computers = {
-    raw: (self: AnsiTextSpanNode) => self.children.reduce((reduction, child) => reduction + child.value, ''),
+    text: (self: AnsiTextSpanNode) => self.plainTextChildren.reduce((reduction, child) => reduction + child.value, ''),
     plainTextChildren: (self: AnsiTextSpanNode) => {
         const plainTextChildren: Children<PlainTextChunkNode> = wrapChildren([]);
         self.children.forEach(child => {
@@ -76,15 +75,12 @@ export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind> imp
     }
 
     public get relatedEscapes(): RelatedAnsiEscapesResult  {
-        return this.memoized.getMemoizedData('relatedEscapes');
+        return this.memoized.get('relatedEscapes');
     }
 
-    public get raw(): string {
-        return this.memoized.getMemoizedData('raw');
-    }
 
     public get plainTextChildren(): Children<PlainTextChunkNode>  {
-        return this.memoized.getMemoizedData('plainTextChildren');
+        return this.memoized.get('plainTextChildren');
     }
 
     public clone(): AnsiTextSpanNode;

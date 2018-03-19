@@ -12,17 +12,19 @@ import { Memoizer } from '../Memoizer';
 
 export interface TextSpanMemoizedData {
     width: number;
+    text: string;
+    raw: string;
 }
 
 const computers = {
+    raw:  <T extends TextSpanNodeKind>(self: BaseTextSpanNode<T>) => self.children.reduce((reduction, child) => reduction + child.value, ''),
+    text: <T extends TextSpanNodeKind>(self: BaseTextSpanNode<T>) => self.children.reduce((reduction, child) => reduction + child.value, ''),
     width: <T extends TextSpanNodeKind>(self: BaseTextSpanNode<T>) => self.children.reduce((reduction, child) => reduction + child.width, 0)
 };
 
 export abstract class BaseTextSpanNode<K extends TextSpanNodeKind> extends ComputedNode<K> implements HasRaw, Derived<TextSpanNode> {
     public abstract kind: K;
     public abstract derivedFrom?: TextSpanNode;
-    public abstract raw: string;
-    public text: string;
     public parent: RootNode;
     public children: Children<TextChunkNode>;
     protected memoized: Memoizer<TextSpanMemoizedData, this>;
@@ -41,6 +43,18 @@ export abstract class BaseTextSpanNode<K extends TextSpanNodeKind> extends Compu
             this.children = wrapChildren(children.map(child => child.clone(this)));
             this.text = null;
         }
+    }
+
+    public get raw(): string {
+        return this.memoized.get('raw');
+    }
+
+    public set text(text: string) {
+        this.memoized.set('text', text);
+    }
+
+    public get text(): string {
+        return this.memoized.get('text');
     }
 
     public calculateRange(parentOffset: LocationData) {
@@ -110,7 +124,7 @@ export abstract class BaseTextSpanNode<K extends TextSpanNodeKind> extends Compu
     }
 
     public get width(): number {
-        return this.memoized.getMemoizedData('width');
+        return this.memoized.get('width');
     }
 
     public toJSON(): object;
