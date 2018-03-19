@@ -1,22 +1,24 @@
 import { Implementation, scenario, Scenario, ExtractProposals, Proposal, SubmittedProposals } from '../Scenario';
 import { RootNode } from '../AST/RootNode';
-import { TextChunkNode, TextChunkNodeKind } from '../AST/TextChunkNode/index';
+import { TextChunkNode, TextChunkNodeKind, PlainTextChunkNode } from '../AST/TextChunkNode/index';
 import { widthOf, plainTextLengthOf } from '../width';
-import { ChildInRange } from './slice';
+import { ChildInRange, PartialNode, PartialNodeType } from './slice';
 import { TextSpanNode } from '../AST/TextSpanNode/index';
+import { CharacterNode } from '../AST/TextChunkNode/CharacterNode';
 
-export interface BadSliceData {
+export interface BadChunkSliceData {
     start: number;
     stop: number;
     gapLeft: number;
     gapRight: number;
+    partialType: PartialNodeType;
     slicedBy: 'plainTextOffset' | 'width';
-    partialSpan: ChildInRange<TextSpanNode>;
-    partialChunk: ChildInRange<TextChunkNode>;
+    originalSpan: TextSpanNode;
+    originalChunk: PlainTextChunkNode;
     originalRoot: RootNode;
 }
 
-export type BadSliceThrower = (data: BadSliceData) => never;
+export type BadSliceThrower = (data: BadChunkSliceData) => never;
 
 export class Throw {
 
@@ -29,8 +31,9 @@ export class Throw {
         this.thrower = thrower.bind(this);
     }
 
-    public static defaultThrower(): never {
-        throw new Error();
+    public static defaultThrower(data: BadChunkSliceData): never {
+        console.error(data);
+        throw new Error('bad slice');
     }
 
 }
@@ -38,7 +41,7 @@ export class Throw {
 
 export type BadSliceFiller = (
     | string
-    | ((data: BadSliceData) => string | TextChunkNode)
+    | ((data: BadChunkSliceData, parent: TextSpanNode) => TextChunkNode)
 );
 
 
@@ -60,29 +63,36 @@ export class Fill {
         }
     }
 
-    public fill(slice: BadSliceData): TextChunkNode {
+    public fill(slice: BadChunkSliceData, parent: TextSpanNode): TextChunkNode {
+        const desiredSize = ((slice.slicedBy === 'plainTextOffset')
+            ? slice.originalChunk.bytes - slice.gapLeft - slice.gapRight
+            : slice.originalChunk.width - slice.gapLeft - slice.gapRight
+        );
+        // const nChunkKind  = ((slice.originalChunk.kind === 'CharacterNode')
+        //     ? CharacterNode
+        //     : ((slice.originalChunk.kind === 'NewLineEscapeNode')
+        //         ? CharacterNode // if we are filling a NewLineEscapeNode, just replace it with a `CharacterNode`
+        //         : undefined // throw error so we know to add support for new `TextChunkNodeKind`s
+        //     )
+        // );
+        /// TODO :: test if it contains any AnsiEscapes (not just if it is an AnsiEscapesNode)
+        /// TODO :: create new AnsiTextSpanNode inject it into the RootNode
         if (typeof this.filler === 'string') {
-            return {
-                left: this.filler.repeat(slice.gapLeft),
-                right: this.filler.repeat(slice.gapRight)
-            };
+            return slice.originalChunk.clone(parent, this.filler.repeat(desiredSize));
         } else {
-            const fill = this.filler(slice);
+            const fill = this.filler(slice, parent);
             // test function depends on what we are slicing by
             const test: (str: string) => number = (slice.slicedBy === 'width') ? widthOf : plainTextLengthOf;
             // rest of the logic is the same
-            const leftOk = !slice.gapLeft && !fill.left || test(fill.left) === slice.gapLeft;
-            const rightOk = !slice.gapRight && !fill.right || test(fill.right) === slice.gapRight;
-            if (leftOk && rightOk) {
+            if (
+                slice.slicedBy === 'width' && fill.width === desiredSize
+                || slice.slicedBy === 'plainTextOffset' && fill.bytes === desiredSize
+             ) {
                 return fill;
             } else {
                 throw new Error('`BadSliceFiller`s must fill the gap.');
             }
         }
-    }
-
-    public static fillToChunk(slice: BadSliceData, fill: BadSliceFill): TextChunkNode {
-        const nChunk = 
     }
 }
 

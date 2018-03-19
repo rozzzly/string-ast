@@ -1,7 +1,7 @@
 import { TextChunkNode } from './AST/TextChunkNode';
 import { TextSpanNode } from './AST/TextSpanNode';
 import { CharacterNode } from './AST/TextChunkNode/CharacterNode';
-import { NewLineEscapeNode } from './AST/TextChunkNode/NewLineEscapeNode';
+import { NewLineEscapeNode, newLineRegex } from './AST/TextChunkNode/NewLineEscapeNode';
 
 export type SplitQueue = (
     (
@@ -53,7 +53,7 @@ export type SplitStrategy = (
 const NewLineSplit: RegExpSplitStrategy = {
     type: 'RegExp',
     name: 'NewLine',
-    pattern: /(\u000A|(?:\r?\n))/u,
+    pattern: newLineRegex,
     onMatch: (match, parent): NewLineEscapeNode => (
         new NewLineEscapeNode(parent, match)
     )

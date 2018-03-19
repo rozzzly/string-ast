@@ -39,7 +39,7 @@ export abstract class BaseTextSpanNode<K extends TextSpanNodeKind> extends Compu
         } else {
             // @ts-ignore
             this.children = wrapChildren(children.map(child => child.clone(this)));
-            this.text = 'UNCOMPUTED';
+            this.text = null;
         }
     }
 

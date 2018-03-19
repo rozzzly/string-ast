@@ -11,19 +11,36 @@ import { TextSpanNode, TextSpanNodeKind } from '../AST/TextSpanNode';
 import { PlainTextSpanNode } from '../AST/TextSpanNode/PlainTextSpanNode';
 import { Node } from '../AST/index';
 import { Implementation } from '../Scenario';
-import { badSlice, Throw, BadSliceData } from './BadSliceScenario';
+import { badSlice, Throw, BadChunkSliceData } from './BadSliceScenario';
 import { BaseTextSpanNode } from '../AST/TextSpanNode/BaseTextSpanNode';
 
 export type BadSliceStrategy = 'throw' | 'fill' | 'omit';
 
-export type Gap = (
-    | { left: number; }
-    | { right: number; }
-    | { left: number; right: number; }
+
+export type PartialNodeType = (
+    | 'leftPartial'
+    | 'rightPartial'
+    | 'doublePartial'
 );
+
+export interface PartialNode<K extends Node, T extends PartialNodeType = PartialNodeType> {
+    node: K;
+    type: T;
+}
+
 export type ChildInRange<K extends Node> = (
-    | { node: K; type: 'full' }
-    | { node: K; gap: Gap; type: 'leftPartial' | 'rightPartial' | 'doublePartial' }
+    | (
+        { node: K; type: 'full' }
+    ) | (
+        & PartialNode<K, 'leftPartial'>
+        & { gap: { left: number; } }
+    ) | (
+        & PartialNode<K, 'rightPartial'>
+        & { gap: { right: number; } }
+    ) | (
+        & PartialNode<K, 'doublePartial'>
+        & { gap: { left: number; right: number; } }
+    )
 );
 export type ChildrenInRange<K extends Node> = ChildInRange<K>[];
 
@@ -111,7 +128,8 @@ function getChildrenInRange<K extends Node>(
                     // --------|--X--Y--|-------- doublePartial (break)
                     result.push({
                         node: current,
-                        type: 'doublePartial', gap: {
+                        type: 'doublePartial',
+                        gap: {
                             left: leftBound - nodeStart,
                             right: nodeStop - rightBound
                         }
@@ -203,28 +221,28 @@ export function sliceByPlainTextOffset(
             ), false);
 
             if (includesPartial) {
-
-                const nSpan  = (span as BaseTextSpanNode<TextSpanNodeKind>).clone(nRoot, []);
+                const nSpan  = (span as AnsiTextSpanNode).clone(nRoot, []);
                 chunks.forEach(({ type: chunkType, node: chunk }) => {
                     if (chunkType === 'full') {
                         nSpan.children.push(chunk.clone(nSpan as any));
                     } else {
-                        const data: BadSliceData = {
-                            partialChunk: { type: spanType, node: chunk},
-                            partialSpan: { type: chunkType, node: span},
+                        const data: BadChunkSliceData = {
+                            originalChunk: chunk,
+                            originalSpan: span,
                             originalRoot: root,
                             start: start_safe,
                             stop: stop_safe,
+                            partialType: chunkType,
                             gapLeft: span.range.start.plainTextOffset - start_safe,
                             gapRight: span.range.stop.plainTextOffset - stop_safe,
                             slicedBy: 'plainTextOffset'
-                        }
+                        };
                         const stratImpl = badSlice.enact(strategy);
                         if (stratImpl.name === 'Throw') {
                             stratImpl.thrower(data);
                         } else {
-                            const fill = stratImpl.fill(data);
-                            nSpan.children.push();
+                            const nChunk = stratImpl.fill(data, nSpan);
+                            nSpan.children.push(nChunk);
                         }
                     }
                 });
@@ -234,12 +252,12 @@ export function sliceByPlainTextOffset(
                     nSpan.children.push(...escapeClones.after);
                 }
             } else {
-                const nSpan  = (span as BaseTextSpanNode<TextSpanNodeKind>).clone(nRoot, []);
+                const nSpan  = (span as AnsiTextSpanNode).clone(nRoot, []);
                 chunks.forEach(({ type: chunkType, node: chunk }) => {
-                    nSpan.children.push(chunk.clone(nSpan as any));
+                    nSpan.children.push(chunk.clone(nSpan));
                 });
                 if (nSpan.kind === 'AnsiTextSpanNode')  {
-                    const escapeClones = (nSpan as AnsiTextSpanNode).relatedEscapes.clone(nSpan as AnsiTextSpanNode);
+                    const escapeClones = nSpan.relatedEscapes.clone(nSpan);
                     nSpan.children.unshift(...escapeClones.before);
                     nSpan.children.push(...escapeClones.after);
                 }

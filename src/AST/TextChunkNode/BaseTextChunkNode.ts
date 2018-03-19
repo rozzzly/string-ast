@@ -22,6 +22,7 @@ export abstract class BaseTextChunkNode<K extends TextChunkNodeKind> extends Bas
 
     public abstract clone(): BaseTextChunkNode<K>;
     public abstract clone(parent: TextSpanNode): BaseTextChunkNode<K>;
+    public abstract clone(parent: TextSpanNode, value: string): BaseTextChunkNode<K>;
 
 
     public toJSON(): object;
