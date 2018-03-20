@@ -4,7 +4,8 @@ import chalk from 'chalk';
 import { parse } from '../../src';
 
 test('AnsiTextSpanNode surrounded by PlainTextSpanNode', t => {
-    const str: string = `PlainText ${chalk.red.bold('AnsiText')} PlainText`;
+    const str: string = `PlainText ${chalk.red('AnsiText')} PlainText`;
+    util.inspect(str);
     const ast = parse(str);
     console.log(ast);
     t.is(ast.kind, 'RootNode');

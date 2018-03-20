@@ -15,14 +15,14 @@
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "pretty": true,
-        "rootDirs": [
-            "./src",
-            "./test"
-        ],
+        "rootDir": ".",
         "removeComments": false,
         "charset": "utf-8"
     },
-
+    "include": [
+        "src/**/*.ts",
+        "test/**/*.ts"
+    ],
     "exclude": [
         "./bin",
         "./dist",
