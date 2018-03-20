@@ -38,19 +38,30 @@ export abstract class BaseTextSpanNode<K extends TextSpanNodeKind> extends Compu
         if (typeof content === 'string') {
             this.children = wrapChildren(splitText(content, this as any));
             this.text = content;
+            this.raw = content;
         } else {
             // @ts-ignore
             this.children = wrapChildren(children.map(child => child.clone(this)));
             this.text = null;
+            this.raw = null;
         }
     }
 
+    public set raw(raw: string | null) {
+        ((raw === null)
+            ? this.memoized.invalidate('raw')
+            : this.memoized.set('raw', raw)
+        );
+    }
     public get raw(): string {
         return this.memoized.get('raw');
     }
 
-    public set text(text: string) {
-        this.memoized.set('text', text);
+    public set text(text: string | null) {
+        ((text === null)
+            ? this.memoized.invalidate('text')
+            : this.memoized.set('text', text)
+        );
     }
 
     public get text(): string {

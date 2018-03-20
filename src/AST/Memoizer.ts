@@ -1,8 +1,12 @@
-export const Invalidated: unique symbol = Symbol('[string-ast]::AST/Node.Memoizer.data(Invalidated)');
 export type Invalidated = typeof Invalidated;
+export const Invalidated: unique symbol = Symbol('[string-ast]::AST/Node.Memoizer.data(Invalidated)');
+
+export const ArgOmitted: unique symbol = Symbol('[string-ast]::ArgOmitted');
+export type ArgOmitted = typeof ArgOmitted;
+
 
 export type ComputerMap<D extends {}, S extends object> = {
-    [K in keyof D]?: (self: S) => D[K];
+    [K in keyof D]: (self: S) => D[K];
 };
 
 export type InvalidatableDataMap<D extends {}> = {
@@ -11,29 +15,28 @@ export type InvalidatableDataMap<D extends {}> = {
 
 export class Memoizer<D extends {}, S extends object>  {
 
-    private data: InvalidatableDataMap<D>;
-    private computers: ComputerMap<D, S>;
+    private data: InvalidatableDataMap<D> = {} as D;
+    private computers: ComputerMap<D, S> = {} as ComputerMap<D, S>;
     private keyWhitelist: Set<keyof D>;
     private self: S;
 
     public constructor(selfRef: S);
     public constructor(selfRef: S, computers: ComputerMap<D, S>);
-    public constructor(selfRef: S, computers: ComputerMap<D, S> = {}) {
+    public constructor(selfRef: S, computers: ComputerMap<D, S> = {} as ComputerMap<D, S>) {
         this.self = selfRef;
-        this.data = {} as D;
         this.keyWhitelist = new Set();
         this.patch(computers);
     }
 
-    public patch<K extends keyof D>(computers: ComputerMap<D, S>): void;
+    public patch<K extends keyof D>(computers: Partial<ComputerMap<D, S>>): void;
     public patch<K extends keyof D>(key: K, computer: (self: S) => D[K]): void;
     public patch(...args: any[]): void {
         if (args.length === 2) {
             const [key, computer] = args as [keyof D, (self: S) => D[keyof D]];
             if (typeof key === 'string' && key.length > 0) {
                 this.keyWhitelist.add(key);
-                (this.computers as any)[args[0]] = args[1];
-                this.invalidate(key);
+                this.computers[key] = computer;
+                this.data[key] = Invalidated;
             } else {
                 throw new TypeError();
             }
@@ -76,7 +79,16 @@ export class Memoizer<D extends {}, S extends object>  {
         }
     }
 
-    public setOrInvalidate<K extends keyof D>(key: K, value: )
+    public setOrInvalidate<K extends keyof D>(key: K): void;
+    public setOrInvalidate<K extends keyof D>(key: K, value: D[K]): void;
+    public setOrInvalidate<K extends keyof D>(key: K, value: D[K] | ArgOmitted = ArgOmitted): void {
+        this.checkKey(key);
+        if (value === ArgOmitted) {
+            this.data[key] = Invalidated;
+        } else {
+            this.data[key] = value;
+        }
+    }
 
     public set<K extends keyof D>(key: K, value: D[K]): void {
         this.checkKey(key);
@@ -96,9 +108,16 @@ export class Memoizer<D extends {}, S extends object>  {
     private checkKey(key: keyof D): void | never;
     private checkKey(keys: (keyof D)[]): void | never;
     private checkKey(arg: keyof D | (keyof D)[]): void | never {
-        const badKey: keyof D = (Array.isArray(arg) ? arg : [arg]).find(key => this.keyWhitelist.has(key));
-        if (badKey) {
-            throw new ReferenceError(`No computer for '${badKey}'.`);
+        const keyIsBad = ((Array.isArray(arg))
+            ? arg.every(key => this.keyWhitelist.has(key))
+            : this.keyWhitelist.has(arg)
+        );
+        if (keyIsBad) {
+            const badKey = ((Array.isArray(arg))
+                ? arg.find(key => this.keyWhitelist.has(key))
+                : arg
+            );
+            throw new ReferenceError(`No computer for '${keyIsBad}'.`);
         }
     }
 }

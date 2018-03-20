@@ -20,7 +20,6 @@ export class PlainTextSpanNode extends BaseTextSpanNode<PlainTextSpanNodeKind> i
     public constructor(parent: RootNode, children: PlainTextChunkNode[]);
     public constructor(parent: RootNode, content: string | PlainTextChunkNode[]) {
         super(parent, content as any);
-        this.raw = typeof content === 'string' ? content : null;
     }
 
     public clone(): PlainTextSpanNode;

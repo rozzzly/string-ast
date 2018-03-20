@@ -109,7 +109,7 @@ export function parse(str: string): RootNode {
             }
         }
     });
-    root.calculateRange();
+    root.build();
 
     return root;
 }

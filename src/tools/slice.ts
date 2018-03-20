@@ -266,7 +266,7 @@ export function sliceByPlainTextOffset(
     });
 
     // rebuild ranges
-    nRoot.calculateRange();
+    nRoot.build();
 
     // reset text on `RootNode`
     nRoot.raw = nRoot.children.reduce((reduction, child) => reduction + child.raw, '');

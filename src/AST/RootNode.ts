@@ -39,11 +39,7 @@ export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNorma
         throw new Error('Method not implemented.');
     }
 
-    public compute(): void {
-        this.calculateRange();
-    }
-
-    private calculateRange(): void {
+    public build(): void {
         let line: number = 0;
         let column: number = 0;
         let offset: number = 0;
