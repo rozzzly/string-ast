@@ -1,11 +1,14 @@
 {
   "name": "string-ast",
   "version": "0.0.1",
-  "description": "Having trouble manipulating strings with ANSI styles (eg: chalk) or certain Unicode characters? Hammer that nail with an anvil—make an AST out of it!",
+  "description": "Having trouble manipulating strings with ANSI styles (eg: chalk) or certain Unicode characters? Hammer that nail with an anvil; make an AST out of it!",
   "main": "index.js",
   "scripts": {
     "test": "ava",
+    "test:watch": "ava -w",
+    "dev": "npm-run-all -s build -p build:watch test:watch",
     "build": "tsc",
+    "build:watch": "tsc -w",
     "build:es6": "tsc -p ./tsconfig.es2015.json",
     "build:legacy": "tsc -p ./tsconfig.legacy.json"
   },
@@ -26,15 +29,16 @@
   "author": "rozzzly",
   "license": "MIT",
   "dependencies": {
-    "ava": "^0.25.0",
     "lodash": "^4.17.5",
-    "purdy": "^3.0.2",
-    "typelevel-ts": "^0.2.3",
-    "typical-ts": "^0.2.0"
+    "purdy": "^3.0.2"
   },
   "devDependencies": {
-    "@types/lodash": "^4.14.104",
-    "@types/node": "^9.4.6",
+    "ava": "^0.25.0",
+    "npm-run-all": "^4.1.2",
+    "typelevel-ts": "^0.2.3",
+    "typical-ts": "^0.2.0",
+    "@types/lodash": "^4.14.105",
+    "@types/node": "^9.4.7",
     "tslint": "^5.9.1",
     "typescript": "^2.8.0-dev.20180308"
   },

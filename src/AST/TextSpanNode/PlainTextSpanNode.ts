@@ -14,14 +14,13 @@ export class PlainTextSpanNode extends BaseTextSpanNode<PlainTextSpanNodeKind> i
     public derivedFrom?: PlainTextSpanNode;
     public kind: PlainTextSpanNodeKind = PlainTextSpanNodeKind;
     public children: Children<PlainTextChunkNode>;
-    public raw: string;
 
     public constructor(parent: RootNode, text: string);
     public constructor(parent: RootNode, children: PlainTextChunkNode[]);
     public constructor(parent: RootNode, content: string | PlainTextChunkNode[]) {
         super(parent, content as any);
     }
-
+ 
     public clone(): PlainTextSpanNode;
     public clone(parent: RootNode): PlainTextSpanNode;
     public clone(parent: RootNode, text: string): PlainTextSpanNode;

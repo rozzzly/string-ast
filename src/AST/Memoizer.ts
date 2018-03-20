@@ -73,20 +73,9 @@ export class Memoizer<D extends {}, S extends object>  {
     public isInvalidated(subject?: keyof D): boolean {
         if (subject) {
             this.checkKey(subject);
-            return this.data[subject] !== Invalidated;
+            return this.data[subject] === Invalidated;
         } else {
             return Array.from(this.keyWhitelist).some(key => this.data[key] === Invalidated);
-        }
-    }
-
-    public setOrInvalidate<K extends keyof D>(key: K): void;
-    public setOrInvalidate<K extends keyof D>(key: K, value: D[K]): void;
-    public setOrInvalidate<K extends keyof D>(key: K, value: D[K] | ArgOmitted = ArgOmitted): void {
-        this.checkKey(key);
-        if (value === ArgOmitted) {
-            this.data[key] = Invalidated;
-        } else {
-            this.data[key] = value;
         }
     }
 
@@ -108,16 +97,16 @@ export class Memoizer<D extends {}, S extends object>  {
     private checkKey(key: keyof D): void | never;
     private checkKey(keys: (keyof D)[]): void | never;
     private checkKey(arg: keyof D | (keyof D)[]): void | never {
-        const keyIsBad = ((Array.isArray(arg))
+        const keyIsGood = ((Array.isArray(arg))
             ? arg.every(key => this.keyWhitelist.has(key))
             : this.keyWhitelist.has(arg)
         );
-        if (keyIsBad) {
+        if (!keyIsGood) {
             const badKey = ((Array.isArray(arg))
                 ? arg.find(key => this.keyWhitelist.has(key))
                 : arg
             );
-            throw new ReferenceError(`No computer for '${keyIsBad}'.`);
+            throw new ReferenceError(`No computer for '${badKey}'.`);
         }
     }
 }

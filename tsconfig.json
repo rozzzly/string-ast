@@ -15,7 +15,6 @@
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "pretty": true,
-        "sourceRoot": "C:\\Users\\rozzzly\\Projects\\string-ast",
         "rootDirs": [
             "./src",
             "./test"

@@ -146,12 +146,10 @@ export abstract class BaseTextSpanNode<K extends TextSpanNodeKind> extends Compu
             ...super.toJSON(strat),
             children: this.children.map(child => child.toJSON(strategy)),
         };
+        obj.text = this.text;
         if (minVerbosity(strat.verbosity, 'extended')) {
-            obj.text = this.text,
+            obj.raw = this.raw;
             obj.width = this.width;
-            if (strat.verbosity === 'full') {
-                obj.raw = this.raw;
-            }
         }
         return obj;
     }

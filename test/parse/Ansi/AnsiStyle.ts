@@ -24,7 +24,7 @@ test('multiple AnsiTextSpans in a string', t => {
     const ast = parse(str);
     const rc = ast.children.createCursor();
 
-    console.log(ast);
+    // console.log(ast);
 
     const red: AnsiTextSpanNode = rc.peekAt(1);
     const green: AnsiTextSpanNode = rc.peekAt(3);

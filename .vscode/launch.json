@@ -10,7 +10,6 @@
             "protocol": "inspector",
             "name": "Run AVA test",
             "program": "${workspaceRoot}/node_modules/ava/profile.js",
-            "preLaunchTask": "build",
             "args": [
               "${command:prompt-debug.resolve}"
             ],
