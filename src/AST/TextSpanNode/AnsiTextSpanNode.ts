@@ -61,7 +61,7 @@ export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind> imp
                     after,
                     clone: (parent: AnsiTextSpanNode = undefined) => ({
                         before: before.map(node => node.clone(parent)),
-                        after: before.map(node => node.clone(parent))
+                        after: after.map(node => node.clone(parent))
                     })
                 };
             }

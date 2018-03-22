@@ -43,7 +43,7 @@ export abstract class BaseTextSpanNode<K extends TextSpanNodeKind> extends Compu
             this.raw = content;
         } else {
             // @ts-ignore
-            this.children = wrapChildren(children.map(child => child.clone(this)), () => this.invalidate());
+            this.children = wrapChildren(content.map(child => child.clone(this)), () => this.invalidate());
             this.text = null;
             this.raw = null;
         }
@@ -107,7 +107,7 @@ export abstract class BaseTextSpanNode<K extends TextSpanNodeKind> extends Compu
                 line: parentOffset.line + line,
                 column: parentOffset.column + column,
                 offset: parentOffset.offset + offset,
-                plainTextOffset: parentOffset.plainTextOffset + offset,
+                plainTextOffset: parentOffset.plainTextOffset + plainTextOffset,
                 relative: new Location({
                     line, column, offset, plainTextOffset
                 })
