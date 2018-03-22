@@ -5,8 +5,12 @@ export const ArgOmitted: unique symbol = Symbol('[string-ast]::ArgOmitted');
 export type ArgOmitted = typeof ArgOmitted;
 
 
-export type ComputerMap<D extends {}, S extends object> = {
+export type ComputerMap<D extends {} = {}, S extends object = object> = {
     [K in keyof D]: (self: S) => D[K];
+};
+
+export type DataMap<D extends {}> = {
+    [K in keyof D]: D[K] | Invalidated;
 };
 
 export type InvalidatableDataMap<D extends {}> = {

@@ -3,7 +3,7 @@ import { Range } from './Range';
 import { NodeKind, Node } from '../AST';
 import { Serializable, SerializeStrategy, defaultSerializeStrategy, Derived } from './miscInterfaces';
 import { Children, wrapChildren } from './navigation';
-import { Memoizer } from './Memoizer';
+import { Memoizer, DataMap, ComputerMap } from './Memoizer';
 
 
 export abstract class BaseNode<K extends NodeKind> implements Serializable, Derived<Node> {
@@ -24,12 +24,16 @@ export abstract class BaseNode<K extends NodeKind> implements Serializable, Deri
     }
 }
 
-export abstract class ComputedNode<K extends NodeKind> extends BaseNode<K> {
-    protected memoized: Memoizer<{}, this>;
+export abstract class ComputedNode<K extends NodeKind, D extends {}> extends BaseNode<K> {
+    protected memoized: Memoizer<D, this>;
+
+    protected static get computers(): ComputerMap<{}, typeof ComputedNode> {
+        return {};
+    }
 
     public constructor() {
         super();
-        this.memoized = new Memoizer(this);
+        this.memoized = new Memoizer(this, (this.constructor as any).computers);
     }
 
     public abstract clone(): BaseNode<K>;

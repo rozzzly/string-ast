@@ -2,10 +2,10 @@ import { RootNode } from '../RootNode';
 import { AnsiStyle } from '../../Ansi/AnsiStyle';
 import { BaseTextSpanNode, TextSpanMemoizedData } from './BaseTextSpanNode';
 import { AnsiEscapeNode } from '../TextChunkNode/AnsiEscapeNode';
-import { IsInvalidated, SerializeStrategy, defaultSerializeStrategy, minVerbosity, Derived } from '../miscInterfaces';
+import { SerializeStrategy, defaultSerializeStrategy, minVerbosity, Derived } from '../miscInterfaces';
 import { PlainTextChunkNode, TextChunkNode } from '../TextChunkNode';
 import { Children, wrapChildren } from '../navigation';
-import { Memoizer } from '../Memoizer';
+import { Memoizer, ComputerMap } from '../Memoizer';
 
 
 export const AnsiTextSpanNodeKind: 'AnsiTextSpanNode' = 'AnsiTextSpanNode';
@@ -26,44 +26,48 @@ export interface AnsiTextSpanMemoizedData extends TextSpanMemoizedData {
     plainTextChildren: Children<PlainTextChunkNode>;
 }
 
-const computers = {
-    text: (self: AnsiTextSpanNode) => self.plainTextChildren.reduce((reduction, child) => reduction + child.value, ''),
-    plainTextChildren: (self: AnsiTextSpanNode) => {
-        const plainTextChildren: Children<PlainTextChunkNode> = wrapChildren([]);
-        self.children.forEach(child => {
-            if (child.kind !== 'AnsiEscapeNode') {
-                plainTextChildren.push(child);
-            }
-        });
-        return plainTextChildren;
-    },
-    relatedEscapes: (self: AnsiTextSpanNode) => {
-        const before: AnsiEscapeNode[] = [];
-        const after: AnsiEscapeNode[] = [];
-        let textReached: boolean = false;
-        self.children.forEach(child => {
-            if (child.kind === 'AnsiEscapeNode') {
-                if (!textReached) before.push(child);
-                else after.push(child);
-            } else {
-                textReached = true;
-            }
-        });
-        return {
-            before,
-            after,
-            clone: (parent: AnsiTextSpanNode = undefined) => ({
-                before: before.map(node => node.clone(parent)),
-                after: before.map(node => node.clone(parent))
-            })
-        };
-    }
-};
-
 export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind> implements Derived<AnsiTextSpanNode> {
     public kind: AnsiTextSpanNodeKind = AnsiTextSpanNodeKind;
     public derivedFrom?: AnsiTextSpanNode;
     public style: AnsiStyle;
+
+    protected static get computers(): ComputerMap<AnsiTextSpanMemoizedData, AnsiTextSpanNode> {
+        return {
+            ...super.computers,
+            text: (self: AnsiTextSpanNode) => self.plainTextChildren.reduce((reduction, child) => reduction + child.value, ''),
+            plainTextChildren: (self: AnsiTextSpanNode) => {
+                const plainTextChildren: Children<PlainTextChunkNode> = wrapChildren([]);
+                self.children.forEach(child => {
+                    if (child.kind !== 'AnsiEscapeNode') {
+                        plainTextChildren.push(child);
+                    }
+                });
+                return plainTextChildren;
+            },
+            relatedEscapes: (self: AnsiTextSpanNode) => {
+                const before: AnsiEscapeNode[] = [];
+                const after: AnsiEscapeNode[] = [];
+                let textReached: boolean = false;
+                self.children.forEach(child => {
+                    if (child.kind === 'AnsiEscapeNode') {
+                        if (!textReached) before.push(child);
+                        else after.push(child);
+                    } else {
+                        textReached = true;
+                    }
+                });
+                return {
+                    before,
+                    after,
+                    clone: (parent: AnsiTextSpanNode = undefined) => ({
+                        before: before.map(node => node.clone(parent)),
+                        after: before.map(node => node.clone(parent))
+                    })
+                };
+            }
+        };
+    }
+
     protected memoized: Memoizer<AnsiTextSpanMemoizedData, this>;
 
     public constructor(parent: RootNode, text: string, style: AnsiStyle);
@@ -71,7 +75,13 @@ export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind> imp
     public constructor(parent: RootNode, content: string | TextChunkNode[], style: AnsiStyle) {
         super(parent, content as any);
         this.style = style;
-        this.memoized.patch(computers);
+
+        if (typeof content === 'string') {
+            // escapes are not being considered cause constructor is only given plaintext `part`
+            // when being parsed. `AnsiEscapeNode`s are (pre|appe)nded later on and `children` are not
+            // yet auto invalidated when the array mutates
+            this.memoized.invalidate('raw');
+        }
     }
 
     public get relatedEscapes(): RelatedAnsiEscapesResult  {

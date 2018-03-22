@@ -38,7 +38,7 @@ test('AnsiTextSpanNode surrounded by PlainTextSpanNode', t => {
 //     t.is(ast.children[0].kind, 'AnsiTextSpanNode');
 //     t.is(ast.children[1].kind, 'PlainTextSpanNode');
 // });
- 
+
 // test('Just PlainText', t => {
 //     const str: string = 'Just some PlainText';
 //     const ast = parse(str);

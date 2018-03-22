@@ -47,14 +47,6 @@ export interface HasNormalized {
     normalized: string;
 }
 
-export const IsInvalidated: unique symbol = Symbol('[string-ast]::Node(Invalidatable)');
-export type IsInvalidated = typeof IsInvalidated;
-
-export type Invalidatable<T> = (
-    | T
-    | IsInvalidated
-);
-
 export interface Derived<K extends Node> {
     derivedFrom?: K;
 }

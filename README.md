@@ -24,5 +24,6 @@ console.log(parse(str));
 
 
 ##### Prior Art & Resources Used
-https://mathiasbynens.be/notes/javascript-unicode
-https://github.com/sallar/stringz
+ * https://mathiasbynens.be/notes/javascript-unicode
+ * https://github.com/sallar/stringz
+ * https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_.28Select_Graphic_Rendition.29_parameters

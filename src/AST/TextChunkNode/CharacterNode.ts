@@ -20,7 +20,7 @@ export class CharacterNode extends BaseTextChunkNode<CharacterNodeKind> implemen
     public clone(parent: TextSpanNode): CharacterNode;
     public clone(parent: TextSpanNode, value: string): CharacterNode;
     public clone(parent: TextSpanNode = this.parent, value = this.value): CharacterNode {
-        const result =  new CharacterNode(parent, this.value);
+        const result =  new CharacterNode(parent, value);
         result.derivedFrom = this;
         return result;
     }

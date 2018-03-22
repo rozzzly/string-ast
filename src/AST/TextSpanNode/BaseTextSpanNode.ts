@@ -5,28 +5,31 @@ import { BaseNode, ComputedNode } from '../BaseNode';
 import { Range, CompoundRange } from '../Range';
 import { TextChunkNode } from '../TextChunkNode';
 import { TextSpanNode, TextSpanNodeKind } from '../TextSpanNode';
-import { IsInvalidated, HasRaw, SerializeStrategy, defaultSerializeStrategy, minVerbosity, Derived } from '../miscInterfaces';
+import { HasRaw, SerializeStrategy, defaultSerializeStrategy, minVerbosity, Derived } from '../miscInterfaces';
 import { Children, wrapChildren } from '../navigation';
 import { LocationData, Location, CompoundLocation } from '../Location';
-import { Memoizer } from '../Memoizer';
+import { Memoizer, ComputerMap } from '../Memoizer';
 
 export interface TextSpanMemoizedData {
     width: number;
     text: string;
     raw: string;
 }
-
-const computers = {
-    raw:  <T extends TextSpanNodeKind>(self: BaseTextSpanNode<T>) => self.children.reduce((reduction, child) => reduction + child.value, ''),
-    text: <T extends TextSpanNodeKind>(self: BaseTextSpanNode<T>) => self.children.reduce((reduction, child) => reduction + child.value, ''),
-    width: <T extends TextSpanNodeKind>(self: BaseTextSpanNode<T>) => self.children.reduce((reduction, child) => reduction + child.width, 0)
-};
-
-export abstract class BaseTextSpanNode<K extends TextSpanNodeKind> extends ComputedNode<K> implements HasRaw, Derived<TextSpanNode> {
+export abstract class BaseTextSpanNode<K extends TextSpanNodeKind> extends ComputedNode<K, TextSpanMemoizedData> implements HasRaw, Derived<TextSpanNode> {
     public abstract kind: K;
     public abstract derivedFrom?: TextSpanNode;
     public parent: RootNode;
     public children: Children<TextChunkNode>;
+
+    protected static get computers(): ComputerMap<TextSpanMemoizedData, BaseTextSpanNode<TextSpanNodeKind>> {
+        return {
+            ...super.computers,
+            raw:  <T extends TextSpanNodeKind>(self: BaseTextSpanNode<T>) => self.children.reduce((reduction, child) => reduction + child.value, ''),
+            text: <T extends TextSpanNodeKind>(self: BaseTextSpanNode<T>) => self.children.reduce((reduction, child) => reduction + child.value, ''),
+            width: <T extends TextSpanNodeKind>(self: BaseTextSpanNode<T>) => self.children.reduce((reduction, child) => reduction + child.width, 0)
+         };
+    }
+
     protected memoized: Memoizer<TextSpanMemoizedData, this>;
 
     public constructor(parent: RootNode, text: string);
@@ -34,7 +37,6 @@ export abstract class BaseTextSpanNode<K extends TextSpanNodeKind> extends Compu
     public constructor(parent: RootNode, content: string | TextChunkNode[]) {
         super();
         this.parent = parent;
-        this.memoized.patch(computers);
         if (typeof content === 'string') {
             this.children = wrapChildren(splitText(content, this as any));
             this.text = content;

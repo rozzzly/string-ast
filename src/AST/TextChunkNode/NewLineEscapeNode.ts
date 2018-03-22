@@ -26,7 +26,7 @@ export class NewLineEscapeNode extends BaseTextChunkNode<NewLineEscapeNodeKind> 
     public clone(parent: TextSpanNode): NewLineEscapeNode;
     public clone(parent: TextSpanNode, value: string): NewLineEscapeNode;
     public clone(parent: TextSpanNode = this.parent, value: string = this.value): NewLineEscapeNode {
-        const result = new NewLineEscapeNode(parent, this.value);
+        const result = new NewLineEscapeNode(parent, value);
         result.derivedFrom = this;
         return result;
     }
