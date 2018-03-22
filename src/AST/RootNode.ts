@@ -3,7 +3,7 @@ import { stringify } from 'purdy';
 
 import { Range } from './Range';
 import { HasRaw, HasNormalized, Serializable, SerializeStrategy, defaultSerializeStrategy, Derived } from './miscInterfaces';
-import { BaseNode } from './BaseNode';
+import { BaseNode, ComputedNode } from './BaseNode';
 import { TextSpanNode } from './TextSpanNode';
 import { Children, wrapChildren } from './navigation';
 import { Location } from './Location';
@@ -12,7 +12,11 @@ import { Location } from './Location';
 export const RootNodeKind: 'RootNode' = 'RootNode';
 export type RootNodeKind = typeof RootNodeKind;
 
-export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNormalized, Derived<RootNode> {
+export interface RootDataMemoizedData {
+
+}
+
+export class RootNode extends ComputedNode<RootNodeKind, RootDataMemoizedData> implements HasRaw, HasNormalized, Derived<RootNode> {
     public kind: RootNodeKind = RootNodeKind;
     public derivedFrom?: RootNode;
     public raw: string;
@@ -25,7 +29,7 @@ export class RootNode extends BaseNode<RootNodeKind> implements HasRaw, HasNorma
     public constructor(raw: string, normalized: string, children: TextSpanNode[] = []) {
         super();
         this.range = undefined;
-        this.children = wrapChildren(children.map(child => child.clone(this)));
+        this.children = wrapChildren(children.map(child => child.clone(this), () => this.invalidate()));
         this.normalized = normalized;
         this.raw = raw;
     }

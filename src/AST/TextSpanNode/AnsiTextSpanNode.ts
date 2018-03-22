@@ -75,13 +75,6 @@ export class AnsiTextSpanNode extends BaseTextSpanNode<AnsiTextSpanNodeKind> imp
     public constructor(parent: RootNode, content: string | TextChunkNode[], style: AnsiStyle) {
         super(parent, content as any);
         this.style = style;
-
-        if (typeof content === 'string') {
-            // escapes are not being considered cause constructor is only given plaintext `part`
-            // when being parsed. `AnsiEscapeNode`s are (pre|appe)nded later on and `children` are not
-            // yet auto invalidated when the array mutates
-            this.memoized.invalidate('raw');
-        }
     }
 
     public get relatedEscapes(): RelatedAnsiEscapesResult  {

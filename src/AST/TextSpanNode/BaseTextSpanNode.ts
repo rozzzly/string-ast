@@ -38,12 +38,12 @@ export abstract class BaseTextSpanNode<K extends TextSpanNodeKind> extends Compu
         super();
         this.parent = parent;
         if (typeof content === 'string') {
-            this.children = wrapChildren(splitText(content, this as any));
+            this.children = wrapChildren(splitText(content, this as any), () => this.invalidate());
             this.text = content;
             this.raw = content;
         } else {
             // @ts-ignore
-            this.children = wrapChildren(children.map(child => child.clone(this)));
+            this.children = wrapChildren(children.map(child => child.clone(this)), () => this.invalidate());
             this.text = null;
             this.raw = null;
         }

@@ -3,7 +3,7 @@ import { Range } from './Range';
 import { NodeKind, Node } from '../AST';
 import { Serializable, SerializeStrategy, defaultSerializeStrategy, Derived } from './miscInterfaces';
 import { Children, wrapChildren } from './navigation';
-import { Memoizer, DataMap, ComputerMap } from './Memoizer';
+import { Memoizer, ComputerMap } from './Memoizer';
 
 
 export abstract class BaseNode<K extends NodeKind> implements Serializable, Derived<Node> {

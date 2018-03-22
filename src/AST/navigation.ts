@@ -293,6 +293,22 @@ export interface Children<K extends Node> extends Array<K> {
     createCursor(): NodeCursor<K>;
 }
 
+/**
+ * Methods on `Array.prototype` which mutate the array, as per MDN
+ * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/prototype#Mutator_methods
+ */
+const mutates: (keyof Array<any>)[] = [
+    'copyWithin',
+    'fill',
+    'pop',
+    'push',
+    'reverse',
+    'shift',
+    'sort',
+    'splice',
+    'unshift',
+];
+
 /// TODO ::: add override that allows user to supply invalidation callback
 ///     - a `Proxy`ified array is returned
 ///     - set via index lookup syntax (eg `ary[3] = false`) will trigger invalidation
@@ -300,21 +316,40 @@ export interface Children<K extends Node> extends Array<K> {
 ///     - mutation of properties of array items WILL NOT trigger invalidation
 ///         ```typescript
 ///             const bestFriend = { name: 'Steve' };
-///             const friends = [ bestFriend, ...otherFriends ];
+///             const friends = wrapChildren([ bestFriend, ...otherFriends ]);
 ///             friends[0].name = 'Kevin'; // will not trigger invalidation
 ///             friends[0] = { name: 'Ryan' }; // will trigger invalidation
 ///         ```
 export function wrapChildren<K extends Node>(): Children<K>;
 export function wrapChildren<K extends Node>(children: K[]): Children<K>;
-export function wrapChildren<K extends Node>(children: K[] = []): Children<K> {
+export function wrapChildren<K extends Node>(children: K[], invalidate: () => void): Children<K>;
+export function wrapChildren<K extends Node>(children: K[] = [], invalidate?: () => void): Children<K> {
     // prevent mutations
-    const result: Children<K> = [...children] as any;
+    const items: Children<K> = [...children] as any;
 
-    Object.defineProperty(result, 'createCursor', {
-        enumerable: false,
-        value: (): NodeCursor<K> => new NodeCursor(result)
-    });
+    if (invalidate) {
+        const proxy = new Proxy(items, {
+            get(target, prop: keyof Children<K>, receiver) {
+                if (prop === 'createCursor') {
+                    return (): NodeCursor<K> => new NodeCursor(proxy);
+                } else  {
+                    if (mutates.includes(prop)) invalidate();
+                    return Reflect.get(target, prop, receiver);
+                }
+            },
+            set(target, prop: keyof Children<K>, value, receiver): any {
+                invalidate();
+                return Reflect.set(target, prop, value, receiver);
+             }
+        });
+        return proxy;
+    } else {
+        Object.defineProperty(items, 'createCursor', {
+            enumerable: false,
+            value: (): NodeCursor<K> => new NodeCursor(items)
+        });
+        return items;
+    }
 
-    return result;
 }
 

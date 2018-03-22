@@ -9,10 +9,6 @@ export type ComputerMap<D extends {} = {}, S extends object = object> = {
     [K in keyof D]: (self: S) => D[K];
 };
 
-export type DataMap<D extends {}> = {
-    [K in keyof D]: D[K] | Invalidated;
-};
-
 export type InvalidatableDataMap<D extends {}> = {
     [K in keyof D]: D[K] | Invalidated;
 };
