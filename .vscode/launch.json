@@ -11,7 +11,7 @@
             "name": "Run AVA test",
             "program": "${workspaceRoot}/node_modules/ava/profile.js",
             "args": [
-              "${command:prompt-debug.resolve}",
+              "${command:prompt-debug.autoResolve}",
               "--color"
             ],
             "stopOnEntry": false,

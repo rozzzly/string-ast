@@ -1,3 +1,4 @@
 {
+    "prompt-debug.autoResolveScript": "${workspaceRoot}/.vscode/resolve.ts",
     "typescript.tsdk": "node_modules\\typescript\\lib"
 }
