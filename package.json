@@ -29,7 +29,7 @@
   "author": "rozzzly",
   "license": "MIT",
   "dependencies": {
-    "lodash": "^4.17.5",
+    "lodash": "^4.17.11",
     "purdy": "^3.0.2"
   },
   "devDependencies": {
