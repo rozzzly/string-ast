@@ -10,7 +10,9 @@
     "build": "tsc",
     "build:watch": "tsc -w",
     "build:es6": "tsc -p ./tsconfig.es2015.json",
-    "build:legacy": "tsc -p ./tsconfig.legacy.json"
+    "build:legacy": "tsc -p ./tsconfig.legacy.json",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
   },
   "repository": "rozzzly/string-ast",
   "keywords": [
@@ -30,7 +32,8 @@
   "license": "MIT",
   "dependencies": {
     "lodash": "^4.17.5",
-    "purdy": "^3.0.2"
+    "purdy": "^3.0.2",
+    "snyk": "^1.316.1"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.105",
@@ -46,5 +49,6 @@
     "files": [
       "./bin/test/**/*.js"
     ]
-  }
+  },
+  "snyk": true
 }
